@@ -19,13 +19,32 @@ interface TransactionFormProps {
   onCancel: () => void;
 }
 
+// Helper to determine flowType based on transaction type
+const getFlowTypeForType = (t: TransactionType, currentFlow: FlowType): FlowType => {
+  if (t === 'debt') return 'expense';
+  if (t === 'credit') return 'income';
+  return currentFlow;
+};
+
 export function TransactionForm({ transaction, onSubmit, onCancel }: TransactionFormProps) {
   const [type, setType] = useState<TransactionType>(transaction?.type || 'transaction');
-  const [flowType, setFlowType] = useState<FlowType>(transaction?.flowType || 'expense');
+  const [flowType, setFlowType] = useState<FlowType>(
+    getFlowTypeForType(transaction?.type || 'transaction', transaction?.flowType || 'expense')
+  );
   const [amount, setAmount] = useState(transaction?.amount?.toString() || '');
   const [description, setDescription] = useState(transaction?.description || '');
   const [category, setCategory] = useState(transaction?.category || CATEGORIES[0].id);
   const [account, setAccount] = useState(transaction?.account || ACCOUNTS[0].id);
+
+  // Update flowType when type changes
+  const handleTypeChange = (newType: TransactionType) => {
+    setType(newType);
+    if (newType === 'debt') {
+      setFlowType('expense');
+    } else if (newType === 'credit') {
+      setFlowType('income');
+    }
+  };
   
   const [isRecurring, setIsRecurring] = useState(transaction?.recurrence.isRecurring || false);
   const [startDate, setStartDate] = useState<Date | undefined>(
@@ -111,7 +130,7 @@ export function TransactionForm({ transaction, onSubmit, onCancel }: Transaction
                 <button
                   key={t}
                   type="button"
-                  onClick={() => setType(t)}
+                  onClick={() => handleTypeChange(t)}
                   className={cn(
                     "px-4 py-2 rounded-lg text-sm font-medium transition-all",
                     type === t
@@ -125,26 +144,28 @@ export function TransactionForm({ transaction, onSubmit, onCancel }: Transaction
             </div>
           </div>
 
-          {/* Flow Type */}
-          <div className="space-y-2">
-            <Label>Direzione</Label>
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                type="button"
-                variant={flowType === 'income' ? 'income' : 'outline'}
-                onClick={() => setFlowType('income')}
-              >
-                Entrata
-              </Button>
-              <Button
-                type="button"
-                variant={flowType === 'expense' ? 'expense' : 'outline'}
-                onClick={() => setFlowType('expense')}
-              >
-                Uscita
-              </Button>
+          {/* Flow Type - only show for transactions, not for debt/credit */}
+          {type === 'transaction' && (
+            <div className="space-y-2">
+              <Label>Direzione</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  type="button"
+                  variant={flowType === 'income' ? 'income' : 'outline'}
+                  onClick={() => setFlowType('income')}
+                >
+                  Entrata
+                </Button>
+                <Button
+                  type="button"
+                  variant={flowType === 'expense' ? 'expense' : 'outline'}
+                  onClick={() => setFlowType('expense')}
+                >
+                  Uscita
+                </Button>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Amount & Description */}
           <div className="grid grid-cols-2 gap-4">
