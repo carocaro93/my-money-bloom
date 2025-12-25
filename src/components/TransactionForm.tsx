@@ -64,6 +64,9 @@ export function TransactionForm({ transaction, onSubmit, onCancel }: Transaction
   const [isExecutionMonthOnly, setIsExecutionMonthOnly] = useState(
     transaction?.executionDate?.isMonthOnly || false
   );
+  const [isExecutionIndefinite, setIsExecutionIndefinite] = useState(
+    transaction?.executionDate?.isIndefinite ?? false
+  );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,11 +85,11 @@ export function TransactionForm({ transaction, onSubmit, onCancel }: Transaction
       },
     };
 
-    const executionConfig: DateConfig | undefined = !isRecurring && executionDate
+    const executionConfig: DateConfig | undefined = !isRecurring
       ? {
           isMonthOnly: isExecutionMonthOnly,
-          date: executionDate,
-          isIndefinite: false,
+          date: isExecutionIndefinite ? null : executionDate || null,
+          isIndefinite: isExecutionIndefinite,
         }
       : undefined;
 
@@ -345,28 +348,41 @@ export function TransactionForm({ transaction, onSubmit, onCancel }: Transaction
                     id="executionMonthOnly"
                     checked={isExecutionMonthOnly}
                     onCheckedChange={(checked) => setIsExecutionMonthOnly(checked as boolean)}
+                    disabled={isExecutionIndefinite}
                   />
                   <label htmlFor="executionMonthOnly" className="text-sm text-muted-foreground">
                     Solo mese
                   </label>
                 </div>
               </div>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="w-full justify-start">
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {formatDateDisplay(executionDate, isExecutionMonthOnly)}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={executionDate}
-                    onSelect={setExecutionDate}
-                    locale={it}
-                  />
-                </PopoverContent>
-              </Popover>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="executionIndefinite"
+                  checked={isExecutionIndefinite}
+                  onCheckedChange={(checked) => setIsExecutionIndefinite(checked as boolean)}
+                />
+                <label htmlFor="executionIndefinite" className="text-sm text-muted-foreground">
+                  Indefinita (data non definita)
+                </label>
+              </div>
+              {!isExecutionIndefinite && (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full justify-start">
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {formatDateDisplay(executionDate, isExecutionMonthOnly)}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={executionDate}
+                      onSelect={setExecutionDate}
+                      locale={it}
+                    />
+                  </PopoverContent>
+                </Popover>
+              )}
             </div>
           )}
 
