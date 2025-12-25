@@ -14,9 +14,6 @@ const Index = () => {
     addTransaction, 
     updateTransaction, 
     deleteTransaction,
-    totalIncome,
-    totalExpense,
-    balance 
   } = useTransactions();
   
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -87,14 +84,10 @@ const Index = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-6 space-y-6">
-        <Dashboard 
-          balance={balance}
-          totalIncome={totalIncome}
-          totalExpense={totalExpense}
-        />
+        <Dashboard transactions={transactions} />
         
         <div>
-          <h2 className="text-lg font-semibold mb-4">Transazioni Recenti</h2>
+          <h2 className="text-lg font-semibold mb-4">Tutte le Transazioni</h2>
           <TransactionList 
             transactions={transactions}
             onEdit={handleEdit}
