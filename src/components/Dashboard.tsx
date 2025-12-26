@@ -226,34 +226,42 @@ export function Dashboard({ transactions, onEdit }: DashboardProps) {
             <span className="text-sm font-medium">Stato Patrimoniale Totale</span>
           </div>
           
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="text-center">
+          {/* Patrimonio Netto - Hero */}
+          <div className={cn(
+            "rounded-xl p-4 mb-4 text-center",
+            totalBalanceSheet.patrimonioNetto >= 0 
+              ? "bg-gradient-to-r from-success/20 via-success/10 to-success/20 border border-success/30" 
+              : "bg-gradient-to-r from-destructive/20 via-destructive/10 to-destructive/20 border border-destructive/30"
+          )}>
+            <p className="text-sm font-medium text-muted-foreground mb-1">Patrimonio Netto</p>
+            <p className={cn(
+              "text-3xl md:text-4xl font-bold tracking-tight",
+              totalBalanceSheet.patrimonioNetto >= 0 ? "text-success" : "text-destructive"
+            )}>
+              {formatCurrency(totalBalanceSheet.patrimonioNetto)}
+            </p>
+          </div>
+
+          {/* Details Grid */}
+          <div className="grid grid-cols-3 gap-4">
+            <div className="text-center p-3 rounded-lg bg-card/50">
               <p className="text-xs text-muted-foreground mb-1">Liquidi</p>
               <p className={cn(
-                "text-xl font-bold",
+                "text-lg font-bold",
                 totalBalanceSheet.liquidi >= 0 ? "text-primary" : "text-destructive"
               )}>
                 {formatCurrency(totalBalanceSheet.liquidi)}
               </p>
             </div>
-            <div className="text-center border-l border-border/30">
+            <div className="text-center p-3 rounded-lg bg-card/50">
               <p className="text-xs text-muted-foreground mb-1">Crediti</p>
-              <p className="text-xl font-bold text-success">{formatCurrency(totalBalanceSheet.credits)}</p>
+              <p className="text-lg font-bold text-success">{formatCurrency(totalBalanceSheet.credits)}</p>
               <p className="text-xs text-muted-foreground">{allCredits.length} voci</p>
             </div>
-            <div className="text-center border-l border-border/30">
+            <div className="text-center p-3 rounded-lg bg-card/50">
               <p className="text-xs text-muted-foreground mb-1">Debiti</p>
-              <p className="text-xl font-bold text-destructive">{formatCurrency(totalBalanceSheet.debts)}</p>
+              <p className="text-lg font-bold text-destructive">{formatCurrency(totalBalanceSheet.debts)}</p>
               <p className="text-xs text-muted-foreground">{allDebts.length} voci</p>
-            </div>
-            <div className="text-center border-l border-border/30">
-              <p className="text-xs text-muted-foreground mb-1">Patrimonio Netto</p>
-              <p className={cn(
-                "text-xl font-bold",
-                totalBalanceSheet.patrimonioNetto >= 0 ? "text-success" : "text-destructive"
-              )}>
-                {formatCurrency(totalBalanceSheet.patrimonioNetto)}
-              </p>
             </div>
           </div>
         </div>
