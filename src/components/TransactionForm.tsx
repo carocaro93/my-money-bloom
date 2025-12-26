@@ -34,6 +34,8 @@ interface TransferData {
 interface TransactionFormProps {
   transaction?: Transaction | null;
   accounts: AccountOption[];
+  defaultType?: TransactionType;
+  defaultFlowType?: FlowType;
   onSubmit: (data: Omit<Transaction, 'id' | 'createdAt'>, settlement?: SettlementData, transfer?: TransferData) => void;
   onCancel: () => void;
 }
@@ -46,10 +48,10 @@ const getFlowTypeForType = (t: TransactionType, currentFlow: FlowType): FlowType
   return currentFlow;
 };
 
-export function TransactionForm({ transaction, accounts, onSubmit, onCancel }: TransactionFormProps) {
-  const [type, setType] = useState<TransactionType>(transaction?.type || 'transaction');
+export function TransactionForm({ transaction, accounts, defaultType, defaultFlowType, onSubmit, onCancel }: TransactionFormProps) {
+  const [type, setType] = useState<TransactionType>(transaction?.type || defaultType || 'transaction');
   const [flowType, setFlowType] = useState<FlowType>(
-    getFlowTypeForType(transaction?.type || 'transaction', transaction?.flowType || 'expense')
+    defaultFlowType || getFlowTypeForType(transaction?.type || defaultType || 'transaction', transaction?.flowType || 'expense')
   );
   const [amount, setAmount] = useState(transaction?.amount?.toString() || '');
   const [description, setDescription] = useState(transaction?.description || '');

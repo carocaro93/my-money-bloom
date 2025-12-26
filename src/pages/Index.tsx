@@ -4,9 +4,10 @@ import { Dashboard } from '@/components/Dashboard';
 import { TransactionList } from '@/components/TransactionList';
 import { TransactionForm } from '@/components/TransactionForm';
 import { PiggyBankManager } from '@/components/PiggyBankManager';
+import { QuickActions } from '@/components/QuickActions';
 import { useTransactions } from '@/hooks/useTransactions';
 import { usePiggyBanks } from '@/hooks/usePiggyBanks';
-import { Transaction } from '@/types/finance';
+import { Transaction, TransactionType, FlowType } from '@/types/finance';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 
@@ -22,6 +23,8 @@ const Index = () => {
   
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+  const [defaultType, setDefaultType] = useState<TransactionType | undefined>(undefined);
+  const [defaultFlowType, setDefaultFlowType] = useState<FlowType | undefined>(undefined);
   const { toast } = useToast();
 
   const allAccounts = [
@@ -32,6 +35,15 @@ const Index = () => {
 
   const handleAdd = () => {
     setEditingTransaction(null);
+    setDefaultType(undefined);
+    setDefaultFlowType(undefined);
+    setIsFormOpen(true);
+  };
+
+  const handleQuickAction = (type: TransactionType, flowType?: FlowType) => {
+    setEditingTransaction(null);
+    setDefaultType(type);
+    setDefaultFlowType(flowType);
     setIsFormOpen(true);
   };
 
@@ -126,6 +138,8 @@ const Index = () => {
   const handleCancel = () => {
     setIsFormOpen(false);
     setEditingTransaction(null);
+    setDefaultType(undefined);
+    setDefaultFlowType(undefined);
   };
 
   return (
@@ -150,7 +164,7 @@ const Index = () => {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-6 space-y-6">
+      <main className="container mx-auto px-4 py-6 pb-28 md:pb-6 space-y-6">
         <Dashboard transactions={transactions} onEdit={handleEdit} />
         
         <PiggyBankManager
@@ -170,11 +184,16 @@ const Index = () => {
         </div>
       </main>
 
+      {/* Quick Actions - Mobile Only */}
+      <QuickActions onAction={handleQuickAction} />
+
       {/* Transaction Form Modal */}
       {isFormOpen && (
         <TransactionForm
           transaction={editingTransaction}
           accounts={allAccounts}
+          defaultType={defaultType}
+          defaultFlowType={defaultFlowType}
           onSubmit={handleSubmit}
           onCancel={handleCancel}
         />
