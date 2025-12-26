@@ -4,6 +4,9 @@ import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const isUuid = (value: unknown): value is string => typeof value === 'string' && UUID_RE.test(value);
+
 // Helper per convertire da Supabase a Transaction
 const fromSupabase = (row: any): Transaction => ({
   id: row.id,
@@ -85,6 +88,12 @@ export function useTransactions() {
       return;
     }
 
+
+    if (!isUuid(transaction.accountId)) {
+      toast.error('Seleziona un conto valido');
+      return;
+    }
+
     try {
       const { data, error } = await supabase
         .from('transactions')
@@ -121,7 +130,13 @@ export function useTransactions() {
       if (updates.amount !== undefined) supabaseUpdates.amount = updates.amount;
       if (updates.description !== undefined) supabaseUpdates.description = updates.description;
       if (updates.category !== undefined) supabaseUpdates.category = updates.category;
-      if (updates.accountId !== undefined) supabaseUpdates.account_id = updates.accountId;
+       if (updates.accountId !== undefined) {
+         if (!isUuid(updates.accountId)) {
+           toast.error('Seleziona un conto valido');
+           return;
+         }
+         supabaseUpdates.account_id = updates.accountId;
+       }
       if (updates.recurrence !== undefined) supabaseUpdates.recurrence = updates.recurrence;
       if (updates.executionDate !== undefined) supabaseUpdates.execution_date = updates.executionDate;
       if (updates.probability !== undefined) supabaseUpdates.probability = updates.probability;

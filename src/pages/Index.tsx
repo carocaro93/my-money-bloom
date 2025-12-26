@@ -7,7 +7,7 @@ import { TransactionForm } from '@/components/TransactionForm';
 import { PiggyBankManager } from '@/components/PiggyBankManager';
 import { QuickActions } from '@/components/QuickActions';
 import { useTransactions } from '@/hooks/useTransactions';
-import { usePiggyBanks } from '@/hooks/usePiggyBanks';
+import { useAccounts } from '@/hooks/useAccounts';
 import { useAuth } from '@/hooks/useAuth';
 import { Transaction, TransactionType, FlowType } from '@/types/finance';
 import { Button } from '@/components/ui/button';
@@ -22,7 +22,7 @@ const Index = () => {
     deleteTransaction,
   } = useTransactions();
 
-  const { piggyBanks, isLoading: isLoadingAccounts, addPiggyBank, deletePiggyBank } = usePiggyBanks();
+  const { accounts, piggyBanks, isLoading: isLoadingAccounts, addPiggyBank, deletePiggyBank } = useAccounts();
   
   const isLoadingData = isLoadingTransactions || isLoadingAccounts;
   
@@ -54,11 +54,7 @@ const Index = () => {
     });
   };
 
-  const allAccounts = [
-    { id: 'main', label: 'Conto principale', type: 'main' },
-    { id: 'card', label: 'Carta di credito', type: 'card' },
-    ...piggyBanks.map(pb => ({ id: pb.id, label: pb.label, type: pb.type })),
-  ];
+  const allAccounts = accounts;
 
   const handleAdd = () => {
     setEditingTransaction(null);
@@ -222,6 +218,7 @@ const Index = () => {
               <h2 className="text-lg font-semibold mb-4">Tutte le Transazioni</h2>
               <TransactionList 
                 transactions={transactions}
+                accounts={allAccounts}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
               />
