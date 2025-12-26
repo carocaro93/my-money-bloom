@@ -118,10 +118,25 @@ export function Dashboard({ transactions, onEdit }: DashboardProps) {
       .filter(t => t.type === 'debt')
       .reduce((sum, t) => sum + t.amount, 0);
 
+    // Liquidi = entrate - uscite (solo transazioni, non debiti/crediti)
+    const totalIncome = transactions
+      .filter(t => t.type === 'transaction' && t.flowType === 'income')
+      .reduce((sum, t) => sum + t.amount, 0);
+    
+    const totalExpense = transactions
+      .filter(t => t.type === 'transaction' && t.flowType === 'expense')
+      .reduce((sum, t) => sum + t.amount, 0);
+
+    const liquidi = totalIncome - totalExpense;
+
+    // Patrimonio netto totale = liquidi + crediti - debiti
+    const patrimonioNetto = liquidi + totalCredits - totalDebts;
+
     return {
       credits: totalCredits,
       debts: totalDebts,
-      net: totalCredits - totalDebts,
+      liquidi,
+      patrimonioNetto,
     };
   }, [transactions]);
   
@@ -211,24 +226,33 @@ export function Dashboard({ transactions, onEdit }: DashboardProps) {
             <span className="text-sm font-medium">Stato Patrimoniale Totale</span>
           </div>
           
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="text-center">
-              <p className="text-xs text-muted-foreground mb-1">Totale Crediti</p>
+              <p className="text-xs text-muted-foreground mb-1">Liquidi</p>
+              <p className={cn(
+                "text-xl font-bold",
+                totalBalanceSheet.liquidi >= 0 ? "text-primary" : "text-destructive"
+              )}>
+                {formatCurrency(totalBalanceSheet.liquidi)}
+              </p>
+            </div>
+            <div className="text-center border-l border-border/30">
+              <p className="text-xs text-muted-foreground mb-1">Crediti</p>
               <p className="text-xl font-bold text-success">{formatCurrency(totalBalanceSheet.credits)}</p>
               <p className="text-xs text-muted-foreground">{allCredits.length} voci</p>
             </div>
-            <div className="text-center border-x border-border/30">
-              <p className="text-xs text-muted-foreground mb-1">Totale Debiti</p>
+            <div className="text-center border-l border-border/30">
+              <p className="text-xs text-muted-foreground mb-1">Debiti</p>
               <p className="text-xl font-bold text-destructive">{formatCurrency(totalBalanceSheet.debts)}</p>
               <p className="text-xs text-muted-foreground">{allDebts.length} voci</p>
             </div>
-            <div className="text-center">
-              <p className="text-xs text-muted-foreground mb-1">Saldo Netto</p>
+            <div className="text-center border-l border-border/30">
+              <p className="text-xs text-muted-foreground mb-1">Patrimonio Netto</p>
               <p className={cn(
                 "text-xl font-bold",
-                totalBalanceSheet.net >= 0 ? "text-success" : "text-destructive"
+                totalBalanceSheet.patrimonioNetto >= 0 ? "text-success" : "text-destructive"
               )}>
-                {formatCurrency(totalBalanceSheet.net)}
+                {formatCurrency(totalBalanceSheet.patrimonioNetto)}
               </p>
             </div>
           </div>
