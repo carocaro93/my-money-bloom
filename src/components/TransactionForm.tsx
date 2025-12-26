@@ -45,6 +45,7 @@ const getFlowTypeForType = (t: TransactionType, currentFlow: FlowType): FlowType
   if (t === 'debt') return 'expense';
   if (t === 'credit') return 'income';
   if (t === 'investment') return 'expense';
+  if (t === 'commitment') return 'expense';
   return currentFlow;
 };
 
@@ -66,7 +67,7 @@ export function TransactionForm({ transaction, accounts, defaultType, defaultFlo
   // Update flowType and category when type changes
   const handleTypeChange = (newType: TransactionType) => {
     setType(newType);
-    if (newType === 'debt') {
+    if (newType === 'debt' || newType === 'commitment') {
       setFlowType('expense');
     } else if (newType === 'credit') {
       setFlowType('income');
@@ -174,7 +175,12 @@ export function TransactionForm({ transaction, accounts, defaultType, defaultFlo
       <div className="glass rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto animate-slide-up">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-bold">
-            {transaction ? 'Modifica' : 'Nuova'} {type === 'transaction' ? 'Transazione' : type === 'debt' ? 'Debito' : type === 'credit' ? 'Credito' : 'Investimento'}
+            {transaction ? 'Modifica' : 'Nuova'} {
+              type === 'transaction' ? 'Transazione' : 
+              type === 'debt' ? 'Debito' : 
+              type === 'credit' ? 'Credito' : 
+              type === 'investment' ? 'Investimento' : 'Impegno'
+            }
           </h2>
           <Button variant="ghost" size="icon" onClick={onCancel}>
             <X className="w-5 h-5" />
@@ -185,20 +191,23 @@ export function TransactionForm({ transaction, accounts, defaultType, defaultFlo
           {/* Type Selection */}
           <div className="space-y-2">
             <Label>Tipo</Label>
-            <div className="grid grid-cols-4 gap-2">
-              {(['transaction', 'debt', 'credit', 'investment'] as const).map((t) => (
+            <div className="grid grid-cols-5 gap-1">
+              {(['transaction', 'debt', 'credit', 'investment', 'commitment'] as const).map((t) => (
                 <button
                   key={t}
                   type="button"
                   onClick={() => handleTypeChange(t)}
                   className={cn(
-                    "px-3 py-2 rounded-lg text-sm font-medium transition-all",
+                    "px-2 py-2 rounded-lg text-xs font-medium transition-all",
                     type === t
                       ? "bg-primary text-primary-foreground"
                       : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
                   )}
                 >
-                  {t === 'transaction' ? 'Transazione' : t === 'debt' ? 'Debito' : t === 'credit' ? 'Credito' : 'Investimento'}
+                  {t === 'transaction' ? 'Transazione' : 
+                   t === 'debt' ? 'Debito' : 
+                   t === 'credit' ? 'Credito' : 
+                   t === 'investment' ? 'Investimento' : 'Impegno'}
                 </button>
               ))}
             </div>

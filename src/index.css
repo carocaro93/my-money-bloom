@@ -57,6 +57,7 @@
     --debt: 38 92% 50%;
     --credit: 217 91% 60%;
     --investment: 270 70% 55%;
+    --commitment: 340 75% 55%;
 
     /* Gradients */
     --gradient-primary: linear-gradient(135deg, hsl(160 84% 39%), hsl(160 70% 50%));

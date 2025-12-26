@@ -1,4 +1,4 @@
-import { ArrowDownLeft, ArrowUpRight, TrendingDown, TrendingUp, LineChart } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, TrendingDown, TrendingUp, LineChart, CalendarCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { TransactionType, FlowType } from '@/types/finance';
 
@@ -20,7 +20,7 @@ const actions: QuickAction[] = [
     type: 'transaction',
     flowType: 'income',
     label: 'Entrata',
-    icon: <ArrowDownLeft className="w-5 h-5" />,
+    icon: <ArrowDownLeft className="w-4 h-4" />,
     color: 'text-success',
     bgColor: 'bg-success/10 border-success/30 active:bg-success/20',
   },
@@ -28,28 +28,35 @@ const actions: QuickAction[] = [
     type: 'transaction',
     flowType: 'expense',
     label: 'Uscita',
-    icon: <ArrowUpRight className="w-5 h-5" />,
+    icon: <ArrowUpRight className="w-4 h-4" />,
     color: 'text-destructive',
     bgColor: 'bg-destructive/10 border-destructive/30 active:bg-destructive/20',
   },
   {
     type: 'debt',
     label: 'Debito',
-    icon: <TrendingDown className="w-5 h-5" />,
+    icon: <TrendingDown className="w-4 h-4" />,
     color: 'text-warning',
     bgColor: 'bg-warning/10 border-warning/30 active:bg-warning/20',
   },
   {
     type: 'credit',
     label: 'Credito',
-    icon: <TrendingUp className="w-5 h-5" />,
+    icon: <TrendingUp className="w-4 h-4" />,
     color: 'text-credit',
     bgColor: 'bg-credit/10 border-credit/30 active:bg-credit/20',
   },
   {
+    type: 'commitment',
+    label: 'Impegno',
+    icon: <CalendarCheck className="w-4 h-4" />,
+    color: 'text-commitment',
+    bgColor: 'bg-commitment/10 border-commitment/30 active:bg-commitment/20',
+  },
+  {
     type: 'investment',
-    label: 'Investimento',
-    icon: <LineChart className="w-5 h-5" />,
+    label: 'Invest.',
+    icon: <LineChart className="w-4 h-4" />,
     color: 'text-investment',
     bgColor: 'bg-investment/10 border-investment/30 active:bg-investment/20',
   },

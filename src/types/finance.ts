@@ -1,4 +1,4 @@
-export type TransactionType = 'transaction' | 'debt' | 'credit' | 'investment';
+export type TransactionType = 'transaction' | 'debt' | 'credit' | 'investment' | 'commitment';
 export type FlowType = 'income' | 'expense';
 export type CreditProbability = 30 | 50 | 70 | 100;
 
