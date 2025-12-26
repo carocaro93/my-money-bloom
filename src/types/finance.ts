@@ -21,7 +21,7 @@ export interface Transaction {
   amount: number;
   description: string;
   category: string;
-  account: string;
+  accountId: string; // UUID dell'account
   recurrence: RecurrenceConfig;
   executionDate?: DateConfig;
   probability?: CreditProbability; // Solo per crediti

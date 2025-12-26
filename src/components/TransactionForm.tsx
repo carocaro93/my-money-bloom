@@ -57,7 +57,7 @@ export function TransactionForm({ transaction, accounts, defaultType, defaultFlo
   const [amount, setAmount] = useState(transaction?.amount?.toString() || '');
   const [description, setDescription] = useState(transaction?.description || '');
   const [category, setCategory] = useState(transaction?.category || (transaction?.type === 'investment' ? INVESTMENT_CATEGORIES[0].id : CATEGORIES[0].id));
-  const [account, setAccount] = useState(transaction?.account || accounts[0]?.id || 'main');
+  const [accountId, setAccountId] = useState(transaction?.accountId || accounts[0]?.id || 'main');
 
   // Transfer state
   const [isTransfer, setIsTransfer] = useState(false);
@@ -156,7 +156,7 @@ export function TransactionForm({ transaction, accounts, defaultType, defaultFlo
       amount: parseFloat(amount) || 0,
       description,
       category,
-      account: isTransfer ? fromAccount : account,
+      accountId: isTransfer ? fromAccount : accountId,
       recurrence,
       executionDate: executionConfig,
       probability: type === 'credit' ? probability : undefined,
@@ -300,7 +300,7 @@ export function TransactionForm({ transaction, accounts, defaultType, defaultFlo
             {!isTransfer && (
               <div className="space-y-2">
                 <Label>Conto</Label>
-                <Select value={account} onValueChange={setAccount}>
+                <Select value={accountId} onValueChange={setAccountId}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>

@@ -107,7 +107,7 @@ const Index = () => {
           amount: data.amount,
           description: `${data.type === 'debt' ? 'Pagamento' : 'Incasso'}: ${data.description}`,
           category: data.category,
-          account: data.account,
+          accountId: data.accountId,
           recurrence: {
             isRecurring: false,
             startDate: {
@@ -133,14 +133,14 @@ const Index = () => {
       const expenseTransaction: Omit<Transaction, 'id' | 'createdAt'> = {
         ...data,
         flowType: 'expense',
-        account: transfer.fromAccount,
+        accountId: transfer.fromAccount,
         description: `Trasferimento: ${data.description}`,
       };
 
       const incomeTransaction: Omit<Transaction, 'id' | 'createdAt'> = {
         ...data,
         flowType: 'income',
-        account: transfer.toAccount,
+        accountId: transfer.toAccount,
         description: `Trasferimento: ${data.description}`,
       };
 
