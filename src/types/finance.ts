@@ -1,4 +1,4 @@
-export type TransactionType = 'transaction' | 'debt' | 'credit';
+export type TransactionType = 'transaction' | 'debt' | 'credit' | 'investment';
 export type FlowType = 'income' | 'expense';
 export type CreditProbability = 30 | 50 | 70 | 100;
 
@@ -35,6 +35,11 @@ export const CATEGORIES = [
   { id: 'travel', label: 'Viaggi', icon: '✈️' },
   { id: 'dining', label: 'Ristoranti / Luxury', icon: '🍽️' },
   { id: 'entertainment', label: 'Svago e autoregali', icon: '🎮' },
+] as const;
+
+export const INVESTMENT_CATEGORIES = [
+  { id: 'financial', label: 'Finanziario', icon: '📈' },
+  { id: 'capital', label: 'Conto Capitale', icon: '🏢' },
 ] as const;
 
 export const ACCOUNTS = [

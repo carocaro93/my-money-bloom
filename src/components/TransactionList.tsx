@@ -10,7 +10,7 @@ import {
   Clock,
   CreditCard
 } from 'lucide-react';
-import { Transaction, CATEGORIES, ACCOUNTS } from '@/types/finance';
+import { Transaction, CATEGORIES, INVESTMENT_CATEGORIES, ACCOUNTS } from '@/types/finance';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -21,7 +21,7 @@ interface TransactionListProps {
 }
 
 export function TransactionList({ transactions, onEdit, onDelete }: TransactionListProps) {
-  const [filter, setFilter] = useState<'all' | 'transaction' | 'debt' | 'credit'>('all');
+  const [filter, setFilter] = useState<'all' | 'transaction' | 'debt' | 'credit' | 'investment'>('all');
 
   const filteredTransactions = transactions.filter(t => 
     filter === 'all' ? true : t.type === filter
@@ -34,7 +34,12 @@ export function TransactionList({ transactions, onEdit, onDelete }: TransactionL
     }).format(amount);
   };
 
-  const getCategory = (id: string) => CATEGORIES.find(c => c.id === id);
+  const getCategory = (id: string, type: Transaction['type']) => {
+    if (type === 'investment') {
+      return INVESTMENT_CATEGORIES.find(c => c.id === id);
+    }
+    return CATEGORIES.find(c => c.id === id);
+  };
   const getAccount = (id: string) => ACCOUNTS.find(a => a.id === id);
 
   const getTypeLabel = (type: Transaction['type']) => {
@@ -42,6 +47,7 @@ export function TransactionList({ transactions, onEdit, onDelete }: TransactionL
       case 'transaction': return 'Transazione';
       case 'debt': return 'Debito';
       case 'credit': return 'Credito';
+      case 'investment': return 'Investimento';
     }
   };
 
@@ -50,6 +56,7 @@ export function TransactionList({ transactions, onEdit, onDelete }: TransactionL
       case 'transaction': return 'bg-primary/10 text-primary';
       case 'debt': return 'bg-warning/10 text-warning';
       case 'credit': return 'bg-credit/10 text-credit';
+      case 'investment': return 'bg-investment/10 text-investment';
     }
   };
 
@@ -57,7 +64,7 @@ export function TransactionList({ transactions, onEdit, onDelete }: TransactionL
     <div className="space-y-4 animate-slide-up" style={{ animationDelay: '0.1s' }}>
       {/* Filter Tabs */}
       <div className="flex gap-2 overflow-x-auto pb-2">
-        {(['all', 'transaction', 'debt', 'credit'] as const).map((f) => (
+        {(['all', 'transaction', 'debt', 'credit', 'investment'] as const).map((f) => (
           <button
             key={f}
             onClick={() => setFilter(f)}
@@ -81,7 +88,7 @@ export function TransactionList({ transactions, onEdit, onDelete }: TransactionL
           </div>
         ) : (
           filteredTransactions.map((transaction, index) => {
-            const category = getCategory(transaction.category);
+            const category = getCategory(transaction.category, transaction.type);
             const account = getAccount(transaction.account);
             
             return (
