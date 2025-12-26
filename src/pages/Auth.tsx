@@ -6,13 +6,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Mail, Lock, Wallet } from 'lucide-react';
+import { Loader2, User, Lock, Wallet } from 'lucide-react';
 
 const Auth = () => {
   const { user, loading, signIn, signUp } = useAuth();
   const { toast } = useToast();
   const [isLogin, setIsLogin] = useState(true);
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -29,13 +29,31 @@ const Auth = () => {
     return <Navigate to="/" replace />;
   }
 
+  // Genera email fittizia dallo username
+  const generateFakeEmail = (username: string) => `${username.toLowerCase().trim()}@app.local`;
+
+  const validateUsername = (username: string): boolean => {
+    // Username: solo lettere, numeri e underscore, min 3 caratteri
+    const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
+    return usernameRegex.test(username);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!email || !password) {
+    if (!username || !password) {
       toast({
         title: "Errore",
-        description: "Inserisci email e password",
+        description: "Inserisci username e password",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!validateUsername(username)) {
+      toast({
+        title: "Username non valido",
+        description: "L'username deve avere 3-20 caratteri (lettere, numeri, underscore)",
         variant: "destructive",
       });
       return;
@@ -51,26 +69,27 @@ const Auth = () => {
     }
 
     setIsSubmitting(true);
+    const fakeEmail = generateFakeEmail(username);
 
     try {
       if (isLogin) {
-        const { error } = await signIn(email, password);
+        const { error } = await signIn(fakeEmail, password);
         if (error) {
           toast({
             title: "Errore di accesso",
             description: error.message === "Invalid login credentials" 
-              ? "Credenziali non valide" 
+              ? "Username o password non validi" 
               : error.message,
             variant: "destructive",
           });
         }
       } else {
-        const { error } = await signUp(email, password);
+        const { error } = await signUp(fakeEmail, password, username);
         if (error) {
           if (error.message.includes("already registered")) {
             toast({
-              title: "Utente già registrato",
-              description: "Questa email è già registrata. Prova ad accedere.",
+              title: "Username già in uso",
+              description: "Questo username è già registrato. Prova ad accedere.",
               variant: "destructive",
             });
           } else {
@@ -83,8 +102,9 @@ const Auth = () => {
         } else {
           toast({
             title: "Registrazione completata!",
-            description: "Controlla la tua email per confermare l'account.",
+            description: "Puoi ora accedere con il tuo username.",
           });
+          setIsLogin(true);
         }
       }
     } finally {
@@ -123,17 +143,19 @@ const Auth = () => {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="username">Username</Label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    id="email"
-                    type="email"
-                    placeholder="nome@esempio.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    id="username"
+                    type="text"
+                    placeholder="il_tuo_username"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
                     className="pl-10"
                     disabled={isSubmitting}
+                    autoCapitalize="none"
+                    autoCorrect="off"
                   />
                 </div>
               </div>

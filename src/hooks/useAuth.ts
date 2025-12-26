@@ -35,14 +35,16 @@ export const useAuth = () => {
     return { error };
   };
 
-  const signUp = async (email: string, password: string) => {
-    const redirectUrl = `${window.location.origin}/`;
-    
+  const signUp = async (email: string, password: string, username?: string) => {
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: redirectUrl,
+        data: {
+          username: username || email.split('@')[0],
+        },
+        // Disabilita conferma email per username-based auth
+        emailRedirectTo: undefined,
       },
     });
     return { error };
