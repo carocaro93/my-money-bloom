@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { TrendingUp, TrendingDown, Wallet, CalendarDays, CreditCard, HandCoins, RefreshCw, FileText } from 'lucide-react';
+import { TrendingUp, TrendingDown, Wallet, CalendarDays, CreditCard, HandCoins, RefreshCw, FileText, Pencil } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Transaction, CATEGORIES } from '@/types/finance';
 import { format, isSameMonth, isAfter, isBefore, startOfMonth, endOfMonth, isPast } from 'date-fns';
@@ -12,9 +12,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
 
 interface DashboardProps {
   transactions: Transaction[];
+  onEdit?: (transaction: Transaction) => void;
 }
 
 function generateMonthOptions() {
@@ -66,7 +68,7 @@ function isTransactionInMonth(transaction: Transaction, selectedMonth: Date): bo
   }
 }
 
-export function Dashboard({ transactions }: DashboardProps) {
+export function Dashboard({ transactions, onEdit }: DashboardProps) {
   const [selectedMonth, setSelectedMonth] = useState(format(new Date(), 'yyyy-MM'));
   const monthOptions = useMemo(() => generateMonthOptions(), []);
   
@@ -359,9 +361,21 @@ export function Dashboard({ transactions }: DashboardProps) {
                         </p>
                       </div>
                     </div>
-                    <span className="font-bold text-destructive">
-                      -{formatCurrency(expense.amount)}
-                    </span>
+                    <div className="flex items-center gap-3">
+                      <span className="font-bold text-destructive">
+                        -{formatCurrency(expense.amount)}
+                      </span>
+                      {onEdit && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => onEdit(expense)}
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -397,9 +411,21 @@ export function Dashboard({ transactions }: DashboardProps) {
                         </p>
                       </div>
                     </div>
-                    <span className="font-bold text-success">
-                      +{formatCurrency(income.amount)}
-                    </span>
+                    <div className="flex items-center gap-3">
+                      <span className="font-bold text-success">
+                        +{formatCurrency(income.amount)}
+                      </span>
+                      {onEdit && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => onEdit(income)}
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>

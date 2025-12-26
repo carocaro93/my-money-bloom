@@ -84,7 +84,7 @@ const Index = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-6 space-y-6">
-        <Dashboard transactions={transactions} />
+        <Dashboard transactions={transactions} onEdit={handleEdit} />
         
         <div>
           <h2 className="text-lg font-semibold mb-4">Tutte le Transazioni</h2>
