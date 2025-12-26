@@ -88,22 +88,28 @@ export function useTransactions() {
       return;
     }
 
-
     if (!isUuid(transaction.accountId)) {
-      toast.error('Seleziona un conto valido');
+      toast.error(`Conto non valido (accountId=${String(transaction.accountId)})`);
       return;
     }
+
+    const payload = toSupabase(transaction, user.id);
 
     try {
       const { data, error } = await supabase
         .from('transactions')
-        .insert(toSupabase(transaction, user.id))
+        .insert(payload)
         .select()
         .single();
 
       if (error) {
-        console.error('Errore creazione transazione:', error);
-        toast.error('Errore nella creazione della transazione');
+        console.error('Errore creazione transazione:', {
+          error,
+          userId: user.id,
+          accountId: transaction.accountId,
+          payload,
+        });
+        toast.error(`${error.message}${error.code ? ` (codice: ${error.code})` : ''}`);
         return;
       }
 
