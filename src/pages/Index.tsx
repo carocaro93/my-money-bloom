@@ -16,12 +16,15 @@ const Index = () => {
   const { user, loading, signOut } = useAuth();
   const { 
     transactions, 
+    isLoading: isLoadingTransactions,
     addTransaction, 
     updateTransaction, 
     deleteTransaction,
   } = useTransactions();
 
   const { piggyBanks, isLoading: isLoadingAccounts, addPiggyBank, deletePiggyBank } = usePiggyBanks();
+  
+  const isLoadingData = isLoadingTransactions || isLoadingAccounts;
   
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
@@ -199,23 +202,32 @@ const Index = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-6 pb-28 md:pb-6 space-y-6">
-        <Dashboard transactions={transactions} onEdit={handleEdit} />
-        
-        <PiggyBankManager
-          transactions={transactions}
-          piggyBanks={piggyBanks}
-          onAddPiggyBank={addPiggyBank}
-          onDeletePiggyBank={deletePiggyBank}
-        />
-        
-        <div>
-          <h2 className="text-lg font-semibold mb-4">Tutte le Transazioni</h2>
-          <TransactionList 
-            transactions={transactions}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-          />
-        </div>
+        {isLoadingData ? (
+          <div className="flex flex-col items-center justify-center py-12 gap-3">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-sm text-muted-foreground">Caricamento dati...</p>
+          </div>
+        ) : (
+          <>
+            <Dashboard transactions={transactions} onEdit={handleEdit} />
+            
+            <PiggyBankManager
+              transactions={transactions}
+              piggyBanks={piggyBanks}
+              onAddPiggyBank={addPiggyBank}
+              onDeletePiggyBank={deletePiggyBank}
+            />
+            
+            <div>
+              <h2 className="text-lg font-semibold mb-4">Tutte le Transazioni</h2>
+              <TransactionList 
+                transactions={transactions}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+              />
+            </div>
+          </>
+        )}
       </main>
 
       {/* Quick Actions - Mobile Only */}
