@@ -97,6 +97,33 @@ export function Dashboard({ transactions, onEdit }: DashboardProps) {
       t.recurrence.isRecurring && t.flowType === 'income'
     );
   }, [filteredTransactions]);
+
+  // All debts (not filtered by month)
+  const allDebts = useMemo(() => {
+    return transactions.filter(t => t.type === 'debt');
+  }, [transactions]);
+
+  // All credits (not filtered by month)
+  const allCredits = useMemo(() => {
+    return transactions.filter(t => t.type === 'credit');
+  }, [transactions]);
+
+  // Total balance sheet (all transactions, not filtered)
+  const totalBalanceSheet = useMemo(() => {
+    const totalCredits = transactions
+      .filter(t => t.type === 'credit')
+      .reduce((sum, t) => sum + t.amount, 0);
+    
+    const totalDebts = transactions
+      .filter(t => t.type === 'debt')
+      .reduce((sum, t) => sum + t.amount, 0);
+
+    return {
+      credits: totalCredits,
+      debts: totalDebts,
+      net: totalCredits - totalDebts,
+    };
+  }, [transactions]);
   
   // Balance sheet logic (Stato Patrimoniale)
   const balanceSheet = useMemo(() => {
@@ -166,8 +193,48 @@ export function Dashboard({ transactions, onEdit }: DashboardProps) {
     return category ? `${category.icon} ${category.label}` : categoryId;
   };
 
+  const formatDate = (date: Date | null, isMonthOnly: boolean) => {
+    if (!date) return 'Data indefinita';
+    return isMonthOnly 
+      ? format(date, 'MMMM yyyy', { locale: it })
+      : format(date, 'dd MMM yyyy', { locale: it });
+  };
+
   return (
     <div className="space-y-6 animate-slide-up">
+      {/* Total Balance Sheet - Above month selector */}
+      <div className="glass rounded-2xl p-6 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10" />
+        <div className="relative z-10">
+          <div className="flex items-center gap-2 text-muted-foreground mb-4">
+            <Wallet className="w-5 h-5" />
+            <span className="text-sm font-medium">Stato Patrimoniale Totale</span>
+          </div>
+          
+          <div className="grid grid-cols-3 gap-4">
+            <div className="text-center">
+              <p className="text-xs text-muted-foreground mb-1">Totale Crediti</p>
+              <p className="text-xl font-bold text-success">{formatCurrency(totalBalanceSheet.credits)}</p>
+              <p className="text-xs text-muted-foreground">{allCredits.length} voci</p>
+            </div>
+            <div className="text-center border-x border-border/30">
+              <p className="text-xs text-muted-foreground mb-1">Totale Debiti</p>
+              <p className="text-xl font-bold text-destructive">{formatCurrency(totalBalanceSheet.debts)}</p>
+              <p className="text-xs text-muted-foreground">{allDebts.length} voci</p>
+            </div>
+            <div className="text-center">
+              <p className="text-xs text-muted-foreground mb-1">Saldo Netto</p>
+              <p className={cn(
+                "text-xl font-bold",
+                totalBalanceSheet.net >= 0 ? "text-success" : "text-destructive"
+              )}>
+                {formatCurrency(totalBalanceSheet.net)}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Month Selector */}
       <div className="glass rounded-2xl p-6">
         <div className="flex items-center gap-3 mb-4">
@@ -204,14 +271,22 @@ export function Dashboard({ transactions, onEdit }: DashboardProps) {
 
       {/* Tabs */}
       <Tabs defaultValue="balance" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 h-12 glass">
-          <TabsTrigger value="balance" className="gap-2 data-[state=active]:bg-primary/20">
+        <TabsList className="grid w-full grid-cols-4 h-12 glass">
+          <TabsTrigger value="balance" className="gap-1 text-xs sm:text-sm data-[state=active]:bg-primary/20">
             <FileText className="w-4 h-4" />
-            Bilancio Mensile
+            <span className="hidden sm:inline">Bilancio</span>
           </TabsTrigger>
-          <TabsTrigger value="recurring" className="gap-2 data-[state=active]:bg-primary/20">
+          <TabsTrigger value="recurring" className="gap-1 text-xs sm:text-sm data-[state=active]:bg-primary/20">
             <RefreshCw className="w-4 h-4" />
-            Ricorrenti
+            <span className="hidden sm:inline">Ricorrenti</span>
+          </TabsTrigger>
+          <TabsTrigger value="debts" className="gap-1 text-xs sm:text-sm data-[state=active]:bg-destructive/20">
+            <TrendingDown className="w-4 h-4" />
+            <span className="hidden sm:inline">Debiti</span>
+          </TabsTrigger>
+          <TabsTrigger value="credits" className="gap-1 text-xs sm:text-sm data-[state=active]:bg-success/20">
+            <TrendingUp className="w-4 h-4" />
+            <span className="hidden sm:inline">Crediti</span>
           </TabsTrigger>
         </TabsList>
 
@@ -421,6 +496,134 @@ export function Dashboard({ transactions, onEdit }: DashboardProps) {
                           size="icon"
                           className="h-8 w-8"
                           onClick={() => onEdit(income)}
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </TabsContent>
+
+        {/* Debts Tab */}
+        <TabsContent value="debts" className="mt-6 space-y-4">
+          {/* Debts Summary */}
+          <div className="glass rounded-2xl p-5 border-l-4 border-destructive">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <TrendingDown className="w-5 h-5 text-destructive" />
+                <h3 className="font-semibold">Riepilogo Debiti</h3>
+              </div>
+              <span className="text-2xl font-bold text-destructive">
+                {formatCurrency(totalBalanceSheet.debts)}
+              </span>
+            </div>
+            <p className="text-sm text-muted-foreground">{allDebts.length} debiti totali</p>
+          </div>
+
+          {/* Debts List */}
+          <div className="glass rounded-2xl p-5">
+            <h3 className="font-semibold mb-4">Elenco Debiti</h3>
+            
+            {allDebts.length === 0 ? (
+              <p className="text-muted-foreground text-sm text-center py-6">
+                Nessun debito registrato
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {allDebts.map(debt => (
+                  <div 
+                    key={debt.id} 
+                    className="flex items-center justify-between p-3 rounded-xl bg-card/50 hover:bg-card transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-lg bg-destructive/10">
+                        <TrendingDown className="w-4 h-4 text-destructive" />
+                      </div>
+                      <div>
+                        <p className="font-medium">{debt.description}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {getCategoryLabel(debt.category)} • {debt.executionDate?.isIndefinite ? 'Data indefinita' : formatDate(debt.executionDate?.date || null, debt.executionDate?.isMonthOnly || false)}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="font-bold text-destructive">
+                        {formatCurrency(debt.amount)}
+                      </span>
+                      {onEdit && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => onEdit(debt)}
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </TabsContent>
+
+        {/* Credits Tab */}
+        <TabsContent value="credits" className="mt-6 space-y-4">
+          {/* Credits Summary */}
+          <div className="glass rounded-2xl p-5 border-l-4 border-success">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-success" />
+                <h3 className="font-semibold">Riepilogo Crediti</h3>
+              </div>
+              <span className="text-2xl font-bold text-success">
+                {formatCurrency(totalBalanceSheet.credits)}
+              </span>
+            </div>
+            <p className="text-sm text-muted-foreground">{allCredits.length} crediti totali</p>
+          </div>
+
+          {/* Credits List */}
+          <div className="glass rounded-2xl p-5">
+            <h3 className="font-semibold mb-4">Elenco Crediti</h3>
+            
+            {allCredits.length === 0 ? (
+              <p className="text-muted-foreground text-sm text-center py-6">
+                Nessun credito registrato
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {allCredits.map(credit => (
+                  <div 
+                    key={credit.id} 
+                    className="flex items-center justify-between p-3 rounded-xl bg-card/50 hover:bg-card transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-lg bg-success/10">
+                        <TrendingUp className="w-4 h-4 text-success" />
+                      </div>
+                      <div>
+                        <p className="font-medium">{credit.description}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {getCategoryLabel(credit.category)} • {credit.executionDate?.isIndefinite ? 'Data indefinita' : formatDate(credit.executionDate?.date || null, credit.executionDate?.isMonthOnly || false)}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="font-bold text-success">
+                        {formatCurrency(credit.amount)}
+                      </span>
+                      {onEdit && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => onEdit(credit)}
                         >
                           <Pencil className="w-4 h-4" />
                         </Button>
