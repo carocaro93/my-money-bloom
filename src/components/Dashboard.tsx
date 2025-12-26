@@ -318,15 +318,13 @@ export function Dashboard({ transactions, onEdit }: DashboardProps) {
 
           {/* Details Grid */}
           <div className="grid grid-cols-3 gap-4">
-            <div className="text-center p-3 rounded-lg bg-card/50">
-              <p className="text-xs text-muted-foreground mb-1">Liquidi</p>
-              <p className={cn(
-                "text-lg font-bold",
-                totalBalanceSheet.liquidi >= 0 ? "text-primary" : "text-destructive"
-              )}>
-                {formatCurrency(totalBalanceSheet.liquidi)}
-              </p>
-            </div>
+            {showCommitments && (
+              <div className="text-center p-3 rounded-lg bg-card/50">
+                <p className="text-xs text-muted-foreground mb-1">Impegni</p>
+                <p className="text-lg font-bold text-commitment">{formatCurrency(totalBalanceSheet.commitments)}</p>
+                <p className="text-xs text-muted-foreground">{allCommitments.length} voci</p>
+              </div>
+            )}
             <div className="text-center p-3 rounded-lg bg-card/50">
               <p className="text-xs text-muted-foreground mb-1">Crediti</p>
               <p className="text-lg font-bold text-success">{formatCurrency(totalBalanceSheet.credits)}</p>
@@ -337,13 +335,17 @@ export function Dashboard({ transactions, onEdit }: DashboardProps) {
               <p className="text-lg font-bold text-destructive">{formatCurrency(totalBalanceSheet.debts)}</p>
               <p className="text-xs text-muted-foreground">{allDebts.length} voci</p>
             </div>
-            {showCommitments && (
-              <div className="text-center p-3 rounded-lg bg-card/50 col-span-3 sm:col-span-1">
-                <p className="text-xs text-muted-foreground mb-1">Impegni</p>
-                <p className="text-lg font-bold text-commitment">{formatCurrency(totalBalanceSheet.commitments)}</p>
-                <p className="text-xs text-muted-foreground">{allCommitments.length} voci</p>
-              </div>
-            )}
+          </div>
+          
+          {/* Liquidi - Full Width Row */}
+          <div className="mt-4 text-center p-4 rounded-lg bg-card/50">
+            <p className="text-xs text-muted-foreground mb-1">Liquidi</p>
+            <p className={cn(
+              "text-xl font-bold",
+              totalBalanceSheet.liquidi >= 0 ? "text-primary" : "text-destructive"
+            )}>
+              {formatCurrency(totalBalanceSheet.liquidi)}
+            </p>
           </div>
         </div>
       </div>
