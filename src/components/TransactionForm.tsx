@@ -113,6 +113,25 @@ export function TransactionForm({ transaction, accounts, defaultType, defaultFlo
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Validazione data
+    if (isRecurring) {
+      // Per transazioni ricorrenti: serve data inizio o flag indefinita
+      if (!isStartIndefinite && !startDate) {
+        toast.error('Seleziona una data di inizio o segna come "Indefinita (da sempre)"');
+        return;
+      }
+      if (!isEndIndefinite && !endDate) {
+        toast.error('Seleziona una data di fine o segna come "Indefinita (per sempre)"');
+        return;
+      }
+    } else {
+      // Per transazioni singole: serve data esecuzione o flag indefinita
+      if (!isExecutionIndefinite && !executionDate) {
+        toast.error('Seleziona una data o segna come "Indefinita"');
+        return;
+      }
+    }
+
     const recurrence: RecurrenceConfig = {
       isRecurring,
       startDate: {
