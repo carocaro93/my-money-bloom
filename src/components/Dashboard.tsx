@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
-import { TrendingUp, TrendingDown, Wallet, CalendarDays, RefreshCw, FileText, Pencil } from 'lucide-react';
+import { TrendingUp, TrendingDown, Wallet, CalendarDays, RefreshCw, FileText, Pencil, LineChart } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Transaction, CATEGORIES } from '@/types/finance';
+import { Transaction, CATEGORIES, INVESTMENT_CATEGORIES } from '@/types/finance';
 import { format, isSameMonth, isAfter, isBefore, startOfMonth, endOfMonth, isPast } from 'date-fns';
 import { it } from 'date-fns/locale';
 import {
@@ -119,6 +119,11 @@ export function Dashboard({ transactions, onEdit }: DashboardProps) {
     return transactions.filter(t => t.type === 'credit');
   }, [transactions]);
 
+  // All investments (not filtered by month)
+  const allInvestments = useMemo(() => {
+    return transactions.filter(t => t.type === 'investment');
+  }, [transactions]);
+
   // Total balance sheet (all transactions, not filtered)
   const totalBalanceSheet = useMemo(() => {
     const totalCredits = transactions
@@ -218,7 +223,11 @@ export function Dashboard({ transactions, onEdit }: DashboardProps) {
     return str.charAt(0).toUpperCase() + str.slice(1);
   };
 
-  const getCategoryLabel = (categoryId: string) => {
+  const getCategoryLabel = (categoryId: string, type?: string) => {
+    if (type === 'investment') {
+      const category = INVESTMENT_CATEGORIES.find(c => c.id === categoryId);
+      return category ? `${category.icon} ${category.label}` : categoryId;
+    }
     const category = CATEGORIES.find(c => c.id === categoryId);
     return category ? `${category.icon} ${category.label}` : categoryId;
   };
@@ -335,7 +344,7 @@ export function Dashboard({ transactions, onEdit }: DashboardProps) {
 
       {/* Tabs */}
       <Tabs defaultValue="balance" className="w-full">
-        <TabsList className="grid w-full grid-cols-4 h-12 glass">
+        <TabsList className="grid w-full grid-cols-5 h-12 glass">
           <TabsTrigger value="balance" className="gap-1 text-xs sm:text-sm data-[state=active]:bg-primary/20">
             <FileText className="w-4 h-4" />
             <span className="hidden sm:inline">Bilancio</span>
@@ -351,6 +360,10 @@ export function Dashboard({ transactions, onEdit }: DashboardProps) {
           <TabsTrigger value="credits" className="gap-1 text-xs sm:text-sm data-[state=active]:bg-success/20">
             <TrendingUp className="w-4 h-4" />
             <span className="hidden sm:inline">Crediti</span>
+          </TabsTrigger>
+          <TabsTrigger value="investments" className="gap-1 text-xs sm:text-sm data-[state=active]:bg-investment/20">
+            <LineChart className="w-4 h-4" />
+            <span className="hidden sm:inline">Investimenti</span>
           </TabsTrigger>
         </TabsList>
 
@@ -707,6 +720,70 @@ export function Dashboard({ transactions, onEdit }: DashboardProps) {
                           size="icon"
                           className="h-8 w-8"
                           onClick={() => onEdit(credit)}
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </TabsContent>
+
+        {/* Investments Tab */}
+        <TabsContent value="investments" className="mt-6 space-y-4">
+          {/* Investments Summary */}
+          <div className="glass rounded-2xl p-5 border-l-4 border-investment">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <LineChart className="w-5 h-5 text-investment" />
+                <h3 className="font-semibold">Riepilogo Investimenti</h3>
+              </div>
+              <span className="text-2xl font-bold text-investment">
+                {formatCurrency(allInvestments.reduce((sum, t) => sum + t.amount, 0))}
+              </span>
+            </div>
+            <p className="text-sm text-muted-foreground">{allInvestments.length} investimenti totali</p>
+          </div>
+
+          {/* Investments List */}
+          <div className="glass rounded-2xl p-5">
+            <h3 className="font-semibold mb-4">Elenco Investimenti</h3>
+            
+            {allInvestments.length === 0 ? (
+              <p className="text-muted-foreground text-sm text-center py-6">
+                Nessun investimento registrato
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {allInvestments.map(investment => (
+                  <div 
+                    key={investment.id} 
+                    className="flex items-center justify-between p-3 rounded-xl bg-card/50 hover:bg-card transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-lg bg-investment/10">
+                        <LineChart className="w-4 h-4 text-investment" />
+                      </div>
+                      <div>
+                        <p className="font-medium">{investment.description}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {getCategoryLabel(investment.category, 'investment')} • {investment.executionDate?.isIndefinite ? 'Data indefinita' : formatDate(investment.executionDate?.date || null, investment.executionDate?.isMonthOnly || false)}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="font-bold text-investment">
+                        {formatCurrency(investment.amount)}
+                      </span>
+                      {onEdit && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => onEdit(investment)}
                         >
                           <Pencil className="w-4 h-4" />
                         </Button>
