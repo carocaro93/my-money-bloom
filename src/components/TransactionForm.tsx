@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { CalendarIcon, X } from 'lucide-react';
-import { Transaction, TransactionType, FlowType, CreditProbability, CATEGORIES, ACCOUNTS, DateConfig, RecurrenceConfig } from '@/types/finance';
+import { Transaction, TransactionType, FlowType, CreditProbability, CATEGORIES, DateConfig, RecurrenceConfig } from '@/types/finance';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -19,8 +19,15 @@ interface SettlementData {
   isMonthOnly: boolean;
 }
 
+interface AccountOption {
+  id: string;
+  label: string;
+  type: string;
+}
+
 interface TransactionFormProps {
   transaction?: Transaction | null;
+  accounts: AccountOption[];
   onSubmit: (data: Omit<Transaction, 'id' | 'createdAt'>, settlement?: SettlementData) => void;
   onCancel: () => void;
 }
@@ -32,7 +39,7 @@ const getFlowTypeForType = (t: TransactionType, currentFlow: FlowType): FlowType
   return currentFlow;
 };
 
-export function TransactionForm({ transaction, onSubmit, onCancel }: TransactionFormProps) {
+export function TransactionForm({ transaction, accounts, onSubmit, onCancel }: TransactionFormProps) {
   const [type, setType] = useState<TransactionType>(transaction?.type || 'transaction');
   const [flowType, setFlowType] = useState<FlowType>(
     getFlowTypeForType(transaction?.type || 'transaction', transaction?.flowType || 'expense')
@@ -40,7 +47,7 @@ export function TransactionForm({ transaction, onSubmit, onCancel }: Transaction
   const [amount, setAmount] = useState(transaction?.amount?.toString() || '');
   const [description, setDescription] = useState(transaction?.description || '');
   const [category, setCategory] = useState(transaction?.category || CATEGORIES[0].id);
-  const [account, setAccount] = useState(transaction?.account || ACCOUNTS[0].id);
+  const [account, setAccount] = useState(transaction?.account || accounts[0]?.id || 'main');
 
   // Update flowType when type changes
   const handleTypeChange = (newType: TransactionType) => {
@@ -245,7 +252,7 @@ export function TransactionForm({ transaction, onSubmit, onCancel }: Transaction
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {ACCOUNTS.map((acc) => (
+                  {accounts.map((acc) => (
                     <SelectItem key={acc.id} value={acc.id}>
                       {acc.label}
                     </SelectItem>
