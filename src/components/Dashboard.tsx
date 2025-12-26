@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface DashboardProps {
   transactions: Transaction[];
@@ -70,6 +71,7 @@ function isTransactionInMonth(transaction: Transaction, selectedMonth: Date): bo
 
 export function Dashboard({ transactions, onEdit }: DashboardProps) {
   const [selectedMonth, setSelectedMonth] = useState(format(new Date(), 'yyyy-MM'));
+  const [useProbabilistic, setUseProbabilistic] = useState(false);
   const monthOptions = useMemo(() => generateMonthOptions(), []);
   
   const selectedDate = useMemo(() => {
@@ -83,6 +85,15 @@ export function Dashboard({ transactions, onEdit }: DashboardProps) {
   const filteredTransactions = useMemo(() => {
     return transactions.filter(t => isTransactionInMonth(t, selectedDate));
   }, [transactions, selectedDate]);
+
+  // Helper to get credit amount (weighted or not)
+  const getCreditAmount = (t: Transaction) => {
+    if (useProbabilistic && t.type === 'credit') {
+      const prob = t.probability || 100;
+      return t.amount * prob / 100;
+    }
+    return t.amount;
+  };
 
   // Recurring expenses for the selected month
   const recurringExpenses = useMemo(() => {
@@ -112,7 +123,7 @@ export function Dashboard({ transactions, onEdit }: DashboardProps) {
   const totalBalanceSheet = useMemo(() => {
     const totalCredits = transactions
       .filter(t => t.type === 'credit')
-      .reduce((sum, t) => sum + t.amount, 0);
+      .reduce((sum, t) => sum + getCreditAmount(t), 0);
     
     const totalDebts = transactions
       .filter(t => t.type === 'debt')
@@ -138,14 +149,14 @@ export function Dashboard({ transactions, onEdit }: DashboardProps) {
       liquidi,
       patrimonioNetto,
     };
-  }, [transactions]);
+  }, [transactions, useProbabilistic]);
   
   // Balance sheet logic (Stato Patrimoniale)
   const balanceSheet = useMemo(() => {
     // ATTIVO (Assets)
     const credits = filteredTransactions
       .filter(t => t.type === 'credit')
-      .reduce((sum, t) => sum + t.amount, 0);
+      .reduce((sum, t) => sum + getCreditAmount(t), 0);
     
     // Entrate NON ricorrenti
     const incomeTransactions = filteredTransactions
@@ -194,7 +205,7 @@ export function Dashboard({ transactions, onEdit }: DashboardProps) {
       },
       patrimonioNetto,
     };
-  }, [filteredTransactions]);
+  }, [filteredTransactions, useProbabilistic]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('it-IT', {
@@ -221,6 +232,23 @@ export function Dashboard({ transactions, onEdit }: DashboardProps) {
 
   return (
     <div className="space-y-6 animate-slide-up">
+      {/* Probabilistic Toggle */}
+      <div className="flex items-center justify-end gap-2 px-2">
+        <Checkbox
+          id="probabilistic"
+          checked={useProbabilistic}
+          onCheckedChange={(checked) => setUseProbabilistic(checked as boolean)}
+        />
+        <label htmlFor="probabilistic" className="text-sm font-medium cursor-pointer">
+          Probabilistica
+        </label>
+        {useProbabilistic && (
+          <span className="text-xs text-muted-foreground bg-primary/10 px-2 py-0.5 rounded-full">
+            Crediti ponderati
+          </span>
+        )}
+      </div>
+
       {/* Total Balance Sheet - Above month selector */}
       <div className="glass rounded-2xl p-6 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10" />
@@ -616,6 +644,11 @@ export function Dashboard({ transactions, onEdit }: DashboardProps) {
               <div className="flex items-center gap-2">
                 <TrendingUp className="w-5 h-5 text-success" />
                 <h3 className="font-semibold">Riepilogo Crediti</h3>
+                {useProbabilistic && (
+                  <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full">
+                    Ponderato
+                  </span>
+                )}
               </div>
               <span className="text-2xl font-bold text-success">
                 {formatCurrency(totalBalanceSheet.credits)}
@@ -644,16 +677,30 @@ export function Dashboard({ transactions, onEdit }: DashboardProps) {
                         <TrendingUp className="w-4 h-4 text-success" />
                       </div>
                       <div>
-                        <p className="font-medium">{credit.description}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium">{credit.description}</p>
+                          {credit.probability && credit.probability < 100 && (
+                            <span className="text-xs bg-muted px-1.5 py-0.5 rounded">
+                              {credit.probability}%
+                            </span>
+                          )}
+                        </div>
                         <p className="text-xs text-muted-foreground">
                           {getCategoryLabel(credit.category)} • {credit.executionDate?.isIndefinite ? 'Data indefinita' : formatDate(credit.executionDate?.date || null, credit.executionDate?.isMonthOnly || false)}
                         </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className="font-bold text-success">
-                        {formatCurrency(credit.amount)}
-                      </span>
+                      <div className="text-right">
+                        <span className="font-bold text-success">
+                          {formatCurrency(useProbabilistic ? getCreditAmount(credit) : credit.amount)}
+                        </span>
+                        {useProbabilistic && credit.probability && credit.probability < 100 && (
+                          <p className="text-xs text-muted-foreground line-through">
+                            {formatCurrency(credit.amount)}
+                          </p>
+                        )}
+                      </div>
                       {onEdit && (
                         <Button
                           variant="ghost"
