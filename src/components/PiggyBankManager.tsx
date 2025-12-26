@@ -54,7 +54,7 @@ export function PiggyBankManager({
 
   const getPiggyBankBalance = (accountId: string) => {
     const accountTransactions = transactions.filter(
-      t => t.account === accountId && t.type === 'transaction'
+      t => t.accountId === accountId && t.type === 'transaction'
     );
     
     const income = accountTransactions

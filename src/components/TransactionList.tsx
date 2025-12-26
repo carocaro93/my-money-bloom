@@ -91,7 +91,7 @@ export function TransactionList({ transactions, onEdit, onDelete }: TransactionL
         ) : (
           filteredTransactions.map((transaction, index) => {
             const category = getCategory(transaction.category, transaction.type);
-            const account = getAccount(transaction.account);
+            const account = getAccount(transaction.accountId);
             
             return (
               <div

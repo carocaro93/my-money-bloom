@@ -12,7 +12,7 @@ const fromSupabase = (row: any): Transaction => ({
   amount: Number(row.amount),
   description: row.description || '',
   category: row.category || '',
-  account: row.account,
+  accountId: row.account_id, // UUID dell'account
   recurrence: row.recurrence || {
     isRecurring: false,
     startDate: { isMonthOnly: false, date: null, isIndefinite: false },
@@ -31,7 +31,7 @@ const toSupabase = (t: Omit<Transaction, 'id' | 'createdAt'>, userId: string) =>
   amount: t.amount,
   description: t.description,
   category: t.category,
-  account: t.account,
+  account_id: t.accountId, // UUID dell'account
   recurrence: t.recurrence,
   execution_date: t.executionDate,
   probability: t.probability,
@@ -121,7 +121,7 @@ export function useTransactions() {
       if (updates.amount !== undefined) supabaseUpdates.amount = updates.amount;
       if (updates.description !== undefined) supabaseUpdates.description = updates.description;
       if (updates.category !== undefined) supabaseUpdates.category = updates.category;
-      if (updates.account !== undefined) supabaseUpdates.account = updates.account;
+      if (updates.accountId !== undefined) supabaseUpdates.account_id = updates.accountId;
       if (updates.recurrence !== undefined) supabaseUpdates.recurrence = updates.recurrence;
       if (updates.executionDate !== undefined) supabaseUpdates.execution_date = updates.executionDate;
       if (updates.probability !== undefined) supabaseUpdates.probability = updates.probability;
