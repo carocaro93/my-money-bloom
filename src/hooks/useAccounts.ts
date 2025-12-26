@@ -37,7 +37,7 @@ export function useAccounts() {
 
       if (error) {
         console.error('Errore caricamento account:', error);
-        toast.error('Errore nel caricamento dei conti');
+        toast.error(`Errore nel caricamento dei conti: ${error.message}`);
         return;
       }
 
@@ -67,6 +67,7 @@ export function useAccounts() {
 
       if (error) {
         console.error('Errore verifica conti default:', error);
+        toast.error(`Impossibile verificare/creare i conti: ${error.message}`);
         return;
       }
 
@@ -84,8 +85,10 @@ export function useAccounts() {
       const { error: insertError } = await supabase.from('accounts').insert(toCreate);
       if (insertError) {
         console.error('Errore creazione conti default:', insertError);
+        toast.error(`Impossibile creare i conti default: ${insertError.message}`);
         // Non blocchiamo l'app: l'utente potrà comunque usare i conti esistenti.
       }
+
     } catch (err) {
       console.error('Errore:', err);
     }

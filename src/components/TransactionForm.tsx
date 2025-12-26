@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { CalendarIcon, X, ArrowRight } from 'lucide-react';
+import { toast } from 'sonner';
 import { Transaction, TransactionType, FlowType, CreditProbability, CATEGORIES, INVESTMENT_CATEGORIES, DateConfig, RecurrenceConfig } from '@/types/finance';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -151,9 +152,10 @@ export function TransactionForm({ transaction, accounts, defaultType, defaultFlo
       : undefined;
 
     const finalAccountId = isTransfer ? fromAccount : accountId;
-    
+
     // Non inviare se l'account non è valido
     if (!finalAccountId) {
+      toast.error('Seleziona un conto valido');
       return;
     }
 
