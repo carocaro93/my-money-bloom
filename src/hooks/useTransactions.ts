@@ -27,6 +27,7 @@ const fromSupabase = (row: any): Transaction => ({
 });
 
 // Helper per convertire da Transaction a Supabase
+// NOTA: inviamo solo le colonne base che esistono nel DB
 const toSupabase = (t: Omit<Transaction, 'id' | 'createdAt'>, userId: string) => ({
   user_id: userId,
   type: t.type,
@@ -34,10 +35,7 @@ const toSupabase = (t: Omit<Transaction, 'id' | 'createdAt'>, userId: string) =>
   amount: t.amount,
   description: t.description,
   category: t.category,
-  account_id: t.accountId, // UUID dell'account
-  recurrence: t.recurrence,
-  execution_date: t.executionDate,
-  probability: t.probability,
+  account_id: t.accountId,
 });
 
 export function useTransactions() {
@@ -129,23 +127,20 @@ export function useTransactions() {
     }
 
     try {
-      // Converti gli updates nel formato Supabase
+      // Converti gli updates nel formato Supabase (solo colonne base)
       const supabaseUpdates: any = {};
       if (updates.type !== undefined) supabaseUpdates.type = updates.type;
       if (updates.flowType !== undefined) supabaseUpdates.flow_type = updates.flowType;
       if (updates.amount !== undefined) supabaseUpdates.amount = updates.amount;
       if (updates.description !== undefined) supabaseUpdates.description = updates.description;
       if (updates.category !== undefined) supabaseUpdates.category = updates.category;
-       if (updates.accountId !== undefined) {
-         if (!isUuid(updates.accountId)) {
-           toast.error('Seleziona un conto valido');
-           return;
-         }
-         supabaseUpdates.account_id = updates.accountId;
-       }
-      if (updates.recurrence !== undefined) supabaseUpdates.recurrence = updates.recurrence;
-      if (updates.executionDate !== undefined) supabaseUpdates.execution_date = updates.executionDate;
-      if (updates.probability !== undefined) supabaseUpdates.probability = updates.probability;
+      if (updates.accountId !== undefined) {
+        if (!isUuid(updates.accountId)) {
+          toast.error('Seleziona un conto valido');
+          return;
+        }
+        supabaseUpdates.account_id = updates.accountId;
+      }
 
       const { error } = await supabase
         .from('transactions')
