@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { TrendingUp, TrendingDown, Wallet, CalendarDays, RefreshCw, FileText, Pencil, LineChart } from 'lucide-react';
+import { TrendingUp, TrendingDown, Wallet, CalendarDays, RefreshCw, FileText, Pencil, LineChart, CalendarCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Transaction, CATEGORIES, INVESTMENT_CATEGORIES } from '@/types/finance';
 import { format, isSameMonth, isAfter, isBefore, startOfMonth, endOfMonth, isPast } from 'date-fns';
@@ -72,6 +72,7 @@ function isTransactionInMonth(transaction: Transaction, selectedMonth: Date): bo
 export function Dashboard({ transactions, onEdit }: DashboardProps) {
   const [selectedMonth, setSelectedMonth] = useState(format(new Date(), 'yyyy-MM'));
   const [useProbabilistic, setUseProbabilistic] = useState(false);
+  const [showCommitments, setShowCommitments] = useState(true);
   const monthOptions = useMemo(() => generateMonthOptions(), []);
   
   const selectedDate = useMemo(() => {
@@ -124,6 +125,11 @@ export function Dashboard({ transactions, onEdit }: DashboardProps) {
     return transactions.filter(t => t.type === 'investment');
   }, [transactions]);
 
+  // All commitments (not filtered by month)
+  const allCommitments = useMemo(() => {
+    return transactions.filter(t => t.type === 'commitment');
+  }, [transactions]);
+
   // Total balance sheet (all transactions, not filtered)
   const totalBalanceSheet = useMemo(() => {
     const totalCredits = transactions
@@ -133,6 +139,10 @@ export function Dashboard({ transactions, onEdit }: DashboardProps) {
     const totalDebts = transactions
       .filter(t => t.type === 'debt')
       .reduce((sum, t) => sum + t.amount, 0);
+
+    const totalCommitments = showCommitments 
+      ? transactions.filter(t => t.type === 'commitment').reduce((sum, t) => sum + t.amount, 0)
+      : 0;
 
     // Liquidi = entrate - uscite (solo transazioni, non debiti/crediti)
     const totalIncome = transactions
@@ -145,16 +155,17 @@ export function Dashboard({ transactions, onEdit }: DashboardProps) {
 
     const liquidi = totalIncome - totalExpense;
 
-    // Patrimonio netto totale = liquidi + crediti - debiti
-    const patrimonioNetto = liquidi + totalCredits - totalDebts;
+    // Patrimonio netto totale = liquidi + crediti - debiti - impegni
+    const patrimonioNetto = liquidi + totalCredits - totalDebts - totalCommitments;
 
     return {
       credits: totalCredits,
       debts: totalDebts,
+      commitments: totalCommitments,
       liquidi,
       patrimonioNetto,
     };
-  }, [transactions, useProbabilistic]);
+  }, [transactions, useProbabilistic, showCommitments]);
   
   // Balance sheet logic (Stato Patrimoniale)
   const balanceSheet = useMemo(() => {
@@ -179,6 +190,10 @@ export function Dashboard({ transactions, onEdit }: DashboardProps) {
     const debts = filteredTransactions
       .filter(t => t.type === 'debt')
       .reduce((sum, t) => sum + t.amount, 0);
+
+    const commitments = showCommitments
+      ? filteredTransactions.filter(t => t.type === 'commitment').reduce((sum, t) => sum + t.amount, 0)
+      : 0;
     
     // Uscite NON ricorrenti
     const expenseTransactions = filteredTransactions
@@ -190,7 +205,7 @@ export function Dashboard({ transactions, onEdit }: DashboardProps) {
       .filter(t => t.recurrence.isRecurring && t.flowType === 'expense')
       .reduce((sum, t) => sum + t.amount, 0);
 
-    const totalPassivo = debts + expenseTransactions + recurringExpenseTotal;
+    const totalPassivo = debts + commitments + expenseTransactions + recurringExpenseTotal;
 
     // PATRIMONIO NETTO (Net Worth)
     const patrimonioNetto = totalAttivo - totalPassivo;
@@ -204,13 +219,14 @@ export function Dashboard({ transactions, onEdit }: DashboardProps) {
       },
       passivo: {
         debts,
+        commitments,
         expenseTransactions,
         recurringExpense: recurringExpenseTotal,
         total: totalPassivo,
       },
       patrimonioNetto,
     };
-  }, [filteredTransactions, useProbabilistic]);
+  }, [filteredTransactions, useProbabilistic, showCommitments]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('it-IT', {
@@ -241,21 +257,38 @@ export function Dashboard({ transactions, onEdit }: DashboardProps) {
 
   return (
     <div className="space-y-6 animate-slide-up">
-      {/* Probabilistic Toggle */}
-      <div className="flex items-center justify-end gap-2 px-2">
-        <Checkbox
-          id="probabilistic"
-          checked={useProbabilistic}
-          onCheckedChange={(checked) => setUseProbabilistic(checked as boolean)}
-        />
-        <label htmlFor="probabilistic" className="text-sm font-medium cursor-pointer">
-          Probabilistica
-        </label>
-        {useProbabilistic && (
-          <span className="text-xs text-muted-foreground bg-primary/10 px-2 py-0.5 rounded-full">
-            Crediti ponderati
-          </span>
-        )}
+      {/* Toggle Options */}
+      <div className="flex flex-wrap items-center justify-end gap-4 px-2">
+        <div className="flex items-center gap-2">
+          <Checkbox
+            id="commitments"
+            checked={showCommitments}
+            onCheckedChange={(checked) => setShowCommitments(checked as boolean)}
+          />
+          <label htmlFor="commitments" className="text-sm font-medium cursor-pointer">
+            Impegni
+          </label>
+          {showCommitments && (
+            <span className="text-xs text-commitment bg-commitment/10 px-2 py-0.5 rounded-full">
+              Inclusi
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <Checkbox
+            id="probabilistic"
+            checked={useProbabilistic}
+            onCheckedChange={(checked) => setUseProbabilistic(checked as boolean)}
+          />
+          <label htmlFor="probabilistic" className="text-sm font-medium cursor-pointer">
+            Probabilistica
+          </label>
+          {useProbabilistic && (
+            <span className="text-xs text-muted-foreground bg-primary/10 px-2 py-0.5 rounded-full">
+              Crediti ponderati
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Total Balance Sheet - Above month selector */}
@@ -304,6 +337,13 @@ export function Dashboard({ transactions, onEdit }: DashboardProps) {
               <p className="text-lg font-bold text-destructive">{formatCurrency(totalBalanceSheet.debts)}</p>
               <p className="text-xs text-muted-foreground">{allDebts.length} voci</p>
             </div>
+            {showCommitments && (
+              <div className="text-center p-3 rounded-lg bg-card/50 col-span-3 sm:col-span-1">
+                <p className="text-xs text-muted-foreground mb-1">Impegni</p>
+                <p className="text-lg font-bold text-commitment">{formatCurrency(totalBalanceSheet.commitments)}</p>
+                <p className="text-xs text-muted-foreground">{allCommitments.length} voci</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -344,7 +384,7 @@ export function Dashboard({ transactions, onEdit }: DashboardProps) {
 
       {/* Tabs */}
       <Tabs defaultValue="balance" className="w-full">
-        <TabsList className="grid w-full grid-cols-5 h-12 glass">
+        <TabsList className="grid w-full grid-cols-6 h-12 glass">
           <TabsTrigger value="balance" className="gap-1 text-xs sm:text-sm data-[state=active]:bg-primary/20">
             <FileText className="w-4 h-4" />
             <span className="hidden sm:inline">Bilancio</span>
@@ -356,6 +396,10 @@ export function Dashboard({ transactions, onEdit }: DashboardProps) {
           <TabsTrigger value="debts" className="gap-1 text-xs sm:text-sm data-[state=active]:bg-destructive/20">
             <TrendingDown className="w-4 h-4" />
             <span className="hidden sm:inline">Debiti</span>
+          </TabsTrigger>
+          <TabsTrigger value="commitments" className="gap-1 text-xs sm:text-sm data-[state=active]:bg-commitment/20">
+            <CalendarCheck className="w-4 h-4" />
+            <span className="hidden sm:inline">Impegni</span>
           </TabsTrigger>
           <TabsTrigger value="credits" className="gap-1 text-xs sm:text-sm data-[state=active]:bg-success/20">
             <TrendingUp className="w-4 h-4" />
@@ -444,6 +488,12 @@ export function Dashboard({ transactions, onEdit }: DashboardProps) {
                   <span className="text-sm text-muted-foreground">Uscite Ricorrenti</span>
                   <span className="font-medium">{formatCurrency(balanceSheet.passivo.recurringExpense)}</span>
                 </div>
+                {showCommitments && (
+                  <div className="flex justify-between items-center py-2 border-b border-border/30">
+                    <span className="text-sm text-commitment">Impegni</span>
+                    <span className="font-medium text-commitment">{formatCurrency(balanceSheet.passivo.commitments)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between items-center pt-2">
                   <span className="font-semibold">Totale Passivo</span>
                   <span className="font-bold text-destructive text-lg">{formatCurrency(balanceSheet.passivo.total)}</span>
@@ -637,6 +687,70 @@ export function Dashboard({ transactions, onEdit }: DashboardProps) {
                           size="icon"
                           className="h-8 w-8"
                           onClick={() => onEdit(debt)}
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </TabsContent>
+
+        {/* Commitments Tab */}
+        <TabsContent value="commitments" className="mt-6 space-y-4">
+          {/* Commitments Summary */}
+          <div className="glass rounded-2xl p-5 border-l-4 border-commitment">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <CalendarCheck className="w-5 h-5 text-commitment" />
+                <h3 className="font-semibold">Riepilogo Impegni</h3>
+              </div>
+              <span className="text-2xl font-bold text-commitment">
+                {formatCurrency(allCommitments.reduce((sum, t) => sum + t.amount, 0))}
+              </span>
+            </div>
+            <p className="text-sm text-muted-foreground">{allCommitments.length} impegni totali</p>
+          </div>
+
+          {/* Commitments List */}
+          <div className="glass rounded-2xl p-5">
+            <h3 className="font-semibold mb-4">Elenco Impegni</h3>
+            
+            {allCommitments.length === 0 ? (
+              <p className="text-muted-foreground text-sm text-center py-6">
+                Nessun impegno registrato
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {allCommitments.map(commitment => (
+                  <div 
+                    key={commitment.id} 
+                    className="flex items-center justify-between p-3 rounded-xl bg-card/50 hover:bg-card transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-lg bg-commitment/10">
+                        <CalendarCheck className="w-4 h-4 text-commitment" />
+                      </div>
+                      <div>
+                        <p className="font-medium">{commitment.description}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {getCategoryLabel(commitment.category)} • {commitment.executionDate?.isIndefinite ? 'Data indefinita' : formatDate(commitment.executionDate?.date || null, commitment.executionDate?.isMonthOnly || false)}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="font-bold text-commitment">
+                        {formatCurrency(commitment.amount)}
+                      </span>
+                      {onEdit && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => onEdit(commitment)}
                         >
                           <Pencil className="w-4 h-4" />
                         </Button>

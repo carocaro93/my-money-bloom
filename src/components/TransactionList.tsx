@@ -21,7 +21,7 @@ interface TransactionListProps {
 }
 
 export function TransactionList({ transactions, onEdit, onDelete }: TransactionListProps) {
-  const [filter, setFilter] = useState<'all' | 'transaction' | 'debt' | 'credit' | 'investment'>('all');
+  const [filter, setFilter] = useState<'all' | 'transaction' | 'debt' | 'credit' | 'investment' | 'commitment'>('all');
 
   const filteredTransactions = transactions.filter(t => 
     filter === 'all' ? true : t.type === filter
@@ -48,6 +48,7 @@ export function TransactionList({ transactions, onEdit, onDelete }: TransactionL
       case 'debt': return 'Debito';
       case 'credit': return 'Credito';
       case 'investment': return 'Investimento';
+      case 'commitment': return 'Impegno';
     }
   };
 
@@ -57,6 +58,7 @@ export function TransactionList({ transactions, onEdit, onDelete }: TransactionL
       case 'debt': return 'bg-warning/10 text-warning';
       case 'credit': return 'bg-credit/10 text-credit';
       case 'investment': return 'bg-investment/10 text-investment';
+      case 'commitment': return 'bg-commitment/10 text-commitment';
     }
   };
 
@@ -64,7 +66,7 @@ export function TransactionList({ transactions, onEdit, onDelete }: TransactionL
     <div className="space-y-4 animate-slide-up" style={{ animationDelay: '0.1s' }}>
       {/* Filter Tabs */}
       <div className="flex gap-2 overflow-x-auto pb-2">
-        {(['all', 'transaction', 'debt', 'credit', 'investment'] as const).map((f) => (
+        {(['all', 'transaction', 'debt', 'credit', 'investment', 'commitment'] as const).map((f) => (
           <button
             key={f}
             onClick={() => setFilter(f)}
