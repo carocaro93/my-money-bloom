@@ -3,7 +3,9 @@ import { Plus, Wallet } from 'lucide-react';
 import { Dashboard } from '@/components/Dashboard';
 import { TransactionList } from '@/components/TransactionList';
 import { TransactionForm } from '@/components/TransactionForm';
+import { PiggyBankManager } from '@/components/PiggyBankManager';
 import { useTransactions } from '@/hooks/useTransactions';
+import { usePiggyBanks } from '@/hooks/usePiggyBanks';
 import { Transaction } from '@/types/finance';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -15,6 +17,8 @@ const Index = () => {
     updateTransaction, 
     deleteTransaction,
   } = useTransactions();
+
+  const { piggyBanks, addPiggyBank, deletePiggyBank } = usePiggyBanks();
   
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
@@ -116,6 +120,13 @@ const Index = () => {
       <main className="container mx-auto px-4 py-6 space-y-6">
         <Dashboard transactions={transactions} onEdit={handleEdit} />
         
+        <PiggyBankManager
+          transactions={transactions}
+          piggyBanks={piggyBanks}
+          onAddPiggyBank={addPiggyBank}
+          onDeletePiggyBank={deletePiggyBank}
+        />
+        
         <div>
           <h2 className="text-lg font-semibold mb-4">Tutte le Transazioni</h2>
           <TransactionList 
@@ -130,6 +141,11 @@ const Index = () => {
       {isFormOpen && (
         <TransactionForm
           transaction={editingTransaction}
+          accounts={[
+            { id: 'main', label: 'Conto principale', type: 'main' },
+            { id: 'card', label: 'Carta di credito', type: 'card' },
+            ...piggyBanks.map(pb => ({ id: pb.id, label: pb.label, type: pb.type })),
+          ]}
           onSubmit={handleSubmit}
           onCancel={handleCancel}
         />

@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
-import { TrendingUp, TrendingDown, Wallet, CalendarDays, CreditCard, HandCoins, RefreshCw, FileText, Pencil, PiggyBank } from 'lucide-react';
+import { TrendingUp, TrendingDown, Wallet, CalendarDays, RefreshCw, FileText, Pencil } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Transaction, CATEGORIES, ACCOUNTS } from '@/types/finance';
+import { Transaction, CATEGORIES } from '@/types/finance';
 import { format, isSameMonth, isAfter, isBefore, startOfMonth, endOfMonth, isPast } from 'date-fns';
 import { it } from 'date-fns/locale';
 import {
@@ -117,33 +117,6 @@ export function Dashboard({ transactions, onEdit }: DashboardProps) {
   // All credits (not filtered by month)
   const allCredits = useMemo(() => {
     return transactions.filter(t => t.type === 'credit');
-  }, [transactions]);
-
-  // Piggy bank accounts with balances
-  const piggyBankAccounts = useMemo(() => {
-    const piggyBanks = ACCOUNTS.filter(a => a.type === 'piggybank');
-    
-    return piggyBanks.map(account => {
-      const accountTransactions = transactions.filter(t => t.account === account.id && t.type === 'transaction');
-      
-      const income = accountTransactions
-        .filter(t => t.flowType === 'income')
-        .reduce((sum, t) => sum + t.amount, 0);
-      
-      const expense = accountTransactions
-        .filter(t => t.flowType === 'expense')
-        .reduce((sum, t) => sum + t.amount, 0);
-      
-      const balance = income - expense;
-      
-      return {
-        ...account,
-        income,
-        expense,
-        balance,
-        transactionCount: accountTransactions.length,
-      };
-    });
   }, [transactions]);
 
   // Total balance sheet (all transactions, not filtered)
@@ -362,7 +335,7 @@ export function Dashboard({ transactions, onEdit }: DashboardProps) {
 
       {/* Tabs */}
       <Tabs defaultValue="balance" className="w-full">
-        <TabsList className="grid w-full grid-cols-5 h-12 glass">
+        <TabsList className="grid w-full grid-cols-4 h-12 glass">
           <TabsTrigger value="balance" className="gap-1 text-xs sm:text-sm data-[state=active]:bg-primary/20">
             <FileText className="w-4 h-4" />
             <span className="hidden sm:inline">Bilancio</span>
@@ -370,10 +343,6 @@ export function Dashboard({ transactions, onEdit }: DashboardProps) {
           <TabsTrigger value="recurring" className="gap-1 text-xs sm:text-sm data-[state=active]:bg-primary/20">
             <RefreshCw className="w-4 h-4" />
             <span className="hidden sm:inline">Ricorrenti</span>
-          </TabsTrigger>
-          <TabsTrigger value="piggybanks" className="gap-1 text-xs sm:text-sm data-[state=active]:bg-warning/20">
-            <PiggyBank className="w-4 h-4" />
-            <span className="hidden sm:inline">Salvadanai</span>
           </TabsTrigger>
           <TabsTrigger value="debts" className="gap-1 text-xs sm:text-sm data-[state=active]:bg-destructive/20">
             <TrendingDown className="w-4 h-4" />
@@ -601,81 +570,6 @@ export function Dashboard({ transactions, onEdit }: DashboardProps) {
               </div>
             )}
           </div>
-        </TabsContent>
-
-        {/* Piggy Banks Tab */}
-        <TabsContent value="piggybanks" className="mt-6 space-y-4">
-          {/* Total Piggy Banks Summary */}
-          <div className="glass rounded-2xl p-5 border-l-4 border-warning">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <PiggyBank className="w-5 h-5 text-warning" />
-                <h3 className="font-semibold">Totale Salvadanai</h3>
-              </div>
-              <span className={cn(
-                "text-2xl font-bold",
-                piggyBankAccounts.reduce((sum, a) => sum + a.balance, 0) >= 0 ? "text-success" : "text-destructive"
-              )}>
-                {formatCurrency(piggyBankAccounts.reduce((sum, a) => sum + a.balance, 0))}
-              </span>
-            </div>
-            <p className="text-sm text-muted-foreground">{piggyBankAccounts.length} salvadanai configurati</p>
-          </div>
-
-          {/* Individual Piggy Bank Cards */}
-          <div className="grid gap-4 md:grid-cols-2">
-            {piggyBankAccounts.map(account => (
-              <div key={account.id} className="glass rounded-2xl p-5 relative overflow-hidden group hover:border-warning/30 transition-colors">
-                <div className="absolute inset-0 bg-gradient-to-br from-warning/5 via-transparent to-warning/10 opacity-0 group-hover:opacity-100 transition-opacity" />
-                <div className="relative z-10">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="p-3 rounded-xl bg-warning/10">
-                      <PiggyBank className="w-6 h-6 text-warning" />
-                    </div>
-                    <div>
-                      <h4 className="font-semibold">{account.label}</h4>
-                      <p className="text-xs text-muted-foreground">{account.transactionCount} movimenti</p>
-                    </div>
-                  </div>
-                  
-                  {/* Balance */}
-                  <div className={cn(
-                    "rounded-xl p-4 mb-4 text-center",
-                    account.balance >= 0 
-                      ? "bg-success/10 border border-success/20" 
-                      : "bg-destructive/10 border border-destructive/20"
-                  )}>
-                    <p className="text-xs text-muted-foreground mb-1">Saldo Attuale</p>
-                    <p className={cn(
-                      "text-2xl font-bold",
-                      account.balance >= 0 ? "text-success" : "text-destructive"
-                    )}>
-                      {formatCurrency(account.balance)}
-                    </p>
-                  </div>
-                  
-                  {/* Details */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="p-3 rounded-lg bg-card/50 text-center">
-                      <p className="text-xs text-muted-foreground mb-1">Versato</p>
-                      <p className="font-semibold text-success">{formatCurrency(account.income)}</p>
-                    </div>
-                    <div className="p-3 rounded-lg bg-card/50 text-center">
-                      <p className="text-xs text-muted-foreground mb-1">Prelevato</p>
-                      <p className="font-semibold text-destructive">{formatCurrency(account.expense)}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {piggyBankAccounts.length === 0 && (
-            <div className="glass rounded-2xl p-8 text-center">
-              <PiggyBank className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-              <p className="text-muted-foreground">Nessun salvadanaio configurato</p>
-            </div>
-          )}
         </TabsContent>
 
         {/* Debts Tab */}
