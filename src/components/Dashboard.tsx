@@ -147,10 +147,12 @@ export function Dashboard({ transactions, onEdit }: DashboardProps) {
       .filter(t => t.type === 'credit')
       .reduce((sum, t) => sum + t.amount, 0);
     
+    // Entrate NON ricorrenti
     const incomeTransactions = filteredTransactions
-      .filter(t => t.type === 'transaction' && t.flowType === 'income')
+      .filter(t => t.type === 'transaction' && t.flowType === 'income' && !t.recurrence.isRecurring)
       .reduce((sum, t) => sum + t.amount, 0);
 
+    // Entrate ricorrenti
     const recurringIncomeTotal = filteredTransactions
       .filter(t => t.recurrence.isRecurring && t.flowType === 'income')
       .reduce((sum, t) => sum + t.amount, 0);
@@ -162,10 +164,12 @@ export function Dashboard({ transactions, onEdit }: DashboardProps) {
       .filter(t => t.type === 'debt')
       .reduce((sum, t) => sum + t.amount, 0);
     
+    // Uscite NON ricorrenti
     const expenseTransactions = filteredTransactions
-      .filter(t => t.type === 'transaction' && t.flowType === 'expense')
+      .filter(t => t.type === 'transaction' && t.flowType === 'expense' && !t.recurrence.isRecurring)
       .reduce((sum, t) => sum + t.amount, 0);
 
+    // Uscite ricorrenti
     const recurringExpenseTotal = filteredTransactions
       .filter(t => t.recurrence.isRecurring && t.flowType === 'expense')
       .reduce((sum, t) => sum + t.amount, 0);
