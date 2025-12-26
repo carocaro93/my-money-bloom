@@ -95,6 +95,10 @@
     background-image: var(--gradient-primary);
   }
 
+  .safe-area-pb {
+    padding-bottom: env(safe-area-inset-bottom, 0.5rem);
+  }
+
   .animate-float {
     animation: float 6s ease-in-out infinite;
   }
