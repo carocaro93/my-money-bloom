@@ -13,9 +13,15 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 
+interface SettlementData {
+  isSettled: boolean;
+  settlementDate: Date | null;
+  isMonthOnly: boolean;
+}
+
 interface TransactionFormProps {
   transaction?: Transaction | null;
-  onSubmit: (data: Omit<Transaction, 'id' | 'createdAt'>) => void;
+  onSubmit: (data: Omit<Transaction, 'id' | 'createdAt'>, settlement?: SettlementData) => void;
   onCancel: () => void;
 }
 
@@ -68,6 +74,11 @@ export function TransactionForm({ transaction, onSubmit, onCancel }: Transaction
     transaction?.executionDate?.isIndefinite ?? false
   );
 
+  // Settlement state for debt/credit
+  const [isSettled, setIsSettled] = useState(false);
+  const [settlementDate, setSettlementDate] = useState<Date | undefined>(new Date());
+  const [isSettlementMonthOnly, setIsSettlementMonthOnly] = useState(false);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -93,6 +104,14 @@ export function TransactionForm({ transaction, onSubmit, onCancel }: Transaction
         }
       : undefined;
 
+    const settlementData: SettlementData | undefined = isSettled && (type === 'debt' || type === 'credit')
+      ? {
+          isSettled: true,
+          settlementDate: settlementDate || null,
+          isMonthOnly: isSettlementMonthOnly,
+        }
+      : undefined;
+
     onSubmit({
       type,
       flowType,
@@ -102,7 +121,7 @@ export function TransactionForm({ transaction, onSubmit, onCancel }: Transaction
       account,
       recurrence,
       executionDate: executionConfig,
-    });
+    }, settlementData);
   };
 
   const formatDateDisplay = (date: Date | undefined, isMonthOnly: boolean) => {
@@ -382,6 +401,59 @@ export function TransactionForm({ transaction, onSubmit, onCancel }: Transaction
                     />
                   </PopoverContent>
                 </Popover>
+              )}
+            </div>
+          )}
+
+          {/* Settlement option for debt/credit in edit mode */}
+          {transaction && (type === 'debt' || type === 'credit') && (
+            <div className="space-y-4 p-4 rounded-lg bg-success/10 border border-success/20">
+              <div className="flex items-center gap-3">
+                <Checkbox
+                  id="settled"
+                  checked={isSettled}
+                  onCheckedChange={(checked) => setIsSettled(checked as boolean)}
+                />
+                <label htmlFor="settled" className="text-sm font-medium">
+                  {type === 'debt' ? 'Segna come estinto (pagato)' : 'Segna come eseguito (incassato)'}
+                </label>
+              </div>
+              
+              {isSettled && (
+                <div className="space-y-3 pl-6">
+                  <p className="text-xs text-muted-foreground">
+                    Verrà creata automaticamente una transazione di {type === 'debt' ? 'uscita' : 'entrata'} con l'importo di €{amount || '0'}
+                  </p>
+                  <div className="flex items-center justify-between">
+                    <Label>Data {type === 'debt' ? 'pagamento' : 'incasso'}</Label>
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="settlementMonthOnly"
+                        checked={isSettlementMonthOnly}
+                        onCheckedChange={(checked) => setIsSettlementMonthOnly(checked as boolean)}
+                      />
+                      <label htmlFor="settlementMonthOnly" className="text-sm text-muted-foreground">
+                        Solo mese
+                      </label>
+                    </div>
+                  </div>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="w-full justify-start">
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {formatDateDisplay(settlementDate, isSettlementMonthOnly)}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={settlementDate}
+                        onSelect={setSettlementDate}
+                        locale={it}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
               )}
             </div>
           )}

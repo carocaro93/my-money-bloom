@@ -38,13 +38,43 @@ const Index = () => {
     });
   };
 
-  const handleSubmit = (data: Omit<Transaction, 'id' | 'createdAt'>) => {
+  const handleSubmit = (data: Omit<Transaction, 'id' | 'createdAt'>, settlement?: { isSettled: boolean; settlementDate: Date | null; isMonthOnly: boolean }) => {
     if (editingTransaction) {
       updateTransaction(editingTransaction.id, data);
       toast({
         title: "Aggiornato",
         description: "La transazione è stata modificata con successo.",
       });
+
+      // If settlement is requested, create the corresponding transaction
+      if (settlement?.isSettled && settlement.settlementDate) {
+        const settlementTransaction: Omit<Transaction, 'id' | 'createdAt'> = {
+          type: 'transaction',
+          flowType: data.type === 'debt' ? 'expense' : 'income',
+          amount: data.amount,
+          description: `${data.type === 'debt' ? 'Pagamento' : 'Incasso'}: ${data.description}`,
+          category: data.category,
+          account: data.account,
+          recurrence: {
+            isRecurring: false,
+            startDate: {
+              isMonthOnly: settlement.isMonthOnly,
+              date: settlement.settlementDate,
+              isIndefinite: false,
+            },
+            endDate: {
+              isMonthOnly: false,
+              date: null,
+              isIndefinite: true,
+            },
+          },
+        };
+        addTransaction(settlementTransaction);
+        toast({
+          title: data.type === 'debt' ? "Debito estinto" : "Credito incassato",
+          description: `Transazione di ${data.type === 'debt' ? 'pagamento' : 'incasso'} creata automaticamente.`,
+        });
+      }
     } else {
       addTransaction(data);
       toast({
