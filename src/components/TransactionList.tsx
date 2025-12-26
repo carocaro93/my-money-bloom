@@ -10,17 +10,24 @@ import {
   Clock,
   CreditCard
 } from 'lucide-react';
-import { Transaction, CATEGORIES, INVESTMENT_CATEGORIES, ACCOUNTS } from '@/types/finance';
+import { Transaction, CATEGORIES, INVESTMENT_CATEGORIES } from '@/types/finance';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
+interface AccountOption {
+  id: string;
+  label: string;
+  type: string;
+}
+
 interface TransactionListProps {
   transactions: Transaction[];
+  accounts: AccountOption[];
   onEdit: (transaction: Transaction) => void;
   onDelete: (id: string) => void;
 }
 
-export function TransactionList({ transactions, onEdit, onDelete }: TransactionListProps) {
+export function TransactionList({ transactions, accounts, onEdit, onDelete }: TransactionListProps) {
   const [filter, setFilter] = useState<'all' | 'transaction' | 'debt' | 'credit' | 'investment' | 'commitment'>('all');
 
   const filteredTransactions = transactions.filter(t => 
@@ -40,7 +47,7 @@ export function TransactionList({ transactions, onEdit, onDelete }: TransactionL
     }
     return CATEGORIES.find(c => c.id === id);
   };
-  const getAccount = (id: string) => ACCOUNTS.find(a => a.id === id);
+  const getAccount = (id: string) => accounts.find(a => a.id === id);
 
   const getTypeLabel = (type: Transaction['type']) => {
     switch (type) {
