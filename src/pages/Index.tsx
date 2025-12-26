@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Plus, Wallet } from 'lucide-react';
+import { Navigate } from 'react-router-dom';
+import { Plus, Wallet, LogOut, Loader2 } from 'lucide-react';
 import { Dashboard } from '@/components/Dashboard';
 import { TransactionList } from '@/components/TransactionList';
 import { TransactionForm } from '@/components/TransactionForm';
@@ -7,11 +8,12 @@ import { PiggyBankManager } from '@/components/PiggyBankManager';
 import { QuickActions } from '@/components/QuickActions';
 import { useTransactions } from '@/hooks/useTransactions';
 import { usePiggyBanks } from '@/hooks/usePiggyBanks';
+import { useAuth } from '@/hooks/useAuth';
 import { Transaction, TransactionType, FlowType } from '@/types/finance';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-
 const Index = () => {
+  const { user, loading, signOut } = useAuth();
   const { 
     transactions, 
     addTransaction, 
@@ -26,6 +28,28 @@ const Index = () => {
   const [defaultType, setDefaultType] = useState<TransactionType | undefined>(undefined);
   const [defaultFlowType, setDefaultFlowType] = useState<FlowType | undefined>(undefined);
   const { toast } = useToast();
+
+  // Show loading while checking auth
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Redirect to auth if not logged in
+  if (!user) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  const handleLogout = async () => {
+    await signOut();
+    toast({
+      title: "Disconnesso",
+      description: "Hai effettuato il logout con successo.",
+    });
+  };
 
   const allAccounts = [
     { id: 'main', label: 'Conto principale', type: 'main' },
@@ -156,10 +180,15 @@ const Index = () => {
               <p className="text-xs text-muted-foreground">Gestisci le tue finanze</p>
             </div>
           </div>
-          <Button onClick={handleAdd} className="gap-2">
-            <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">Aggiungi</span>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button onClick={handleAdd} className="gap-2">
+              <Plus className="w-4 h-4" />
+              <span className="hidden sm:inline">Aggiungi</span>
+            </Button>
+            <Button variant="ghost" size="icon" onClick={handleLogout} title="Logout">
+              <LogOut className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
       </header>
 
