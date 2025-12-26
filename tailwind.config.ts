@@ -62,6 +62,7 @@ export default {
         expense: "hsl(var(--expense))",
         debt: "hsl(var(--debt))",
         credit: "hsl(var(--credit))",
+        investment: "hsl(var(--investment))",
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
