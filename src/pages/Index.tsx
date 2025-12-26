@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Plus, Wallet } from 'lucide-react';
+import { Plus, Wallet, ArrowLeftRight } from 'lucide-react';
 import { Dashboard } from '@/components/Dashboard';
 import { TransactionList } from '@/components/TransactionList';
 import { TransactionForm } from '@/components/TransactionForm';
+import { TransferForm } from '@/components/TransferForm';
 import { PiggyBankManager } from '@/components/PiggyBankManager';
 import { useTransactions } from '@/hooks/useTransactions';
 import { usePiggyBanks } from '@/hooks/usePiggyBanks';
@@ -21,8 +22,15 @@ const Index = () => {
   const { piggyBanks, addPiggyBank, deletePiggyBank } = usePiggyBanks();
   
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isTransferOpen, setIsTransferOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const { toast } = useToast();
+
+  const allAccounts = [
+    { id: 'main', label: 'Conto principale', type: 'main' },
+    { id: 'card', label: 'Carta di credito', type: 'card' },
+    ...piggyBanks.map(pb => ({ id: pb.id, label: pb.label, type: pb.type })),
+  ];
 
   const handleAdd = () => {
     setEditingTransaction(null);
@@ -95,6 +103,70 @@ const Index = () => {
     setEditingTransaction(null);
   };
 
+  const handleTransfer = (data: {
+    fromAccount: string;
+    toAccount: string;
+    amount: number;
+    description: string;
+    date: Date;
+  }) => {
+    // Create expense transaction from source account
+    const expenseTransaction: Omit<Transaction, 'id' | 'createdAt'> = {
+      type: 'transaction',
+      flowType: 'expense',
+      amount: data.amount,
+      description: `Trasferimento: ${data.description}`,
+      category: 'savings',
+      account: data.fromAccount,
+      recurrence: {
+        isRecurring: false,
+        startDate: {
+          isMonthOnly: false,
+          date: data.date,
+          isIndefinite: false,
+        },
+        endDate: {
+          isMonthOnly: false,
+          date: null,
+          isIndefinite: true,
+        },
+      },
+    };
+
+    // Create income transaction to destination account
+    const incomeTransaction: Omit<Transaction, 'id' | 'createdAt'> = {
+      type: 'transaction',
+      flowType: 'income',
+      amount: data.amount,
+      description: `Trasferimento: ${data.description}`,
+      category: 'savings',
+      account: data.toAccount,
+      recurrence: {
+        isRecurring: false,
+        startDate: {
+          isMonthOnly: false,
+          date: data.date,
+          isIndefinite: false,
+        },
+        endDate: {
+          isMonthOnly: false,
+          date: null,
+          isIndefinite: true,
+        },
+      },
+    };
+
+    addTransaction(expenseTransaction);
+    addTransaction(incomeTransaction);
+
+    toast({
+      title: "Trasferimento completato",
+      description: `${new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(data.amount)} trasferiti con successo.`,
+    });
+
+    setIsTransferOpen(false);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -109,10 +181,16 @@ const Index = () => {
               <p className="text-xs text-muted-foreground">Gestisci le tue finanze</p>
             </div>
           </div>
-          <Button onClick={handleAdd} className="gap-2">
-            <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">Aggiungi</span>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => setIsTransferOpen(true)} className="gap-2">
+              <ArrowLeftRight className="w-4 h-4" />
+              <span className="hidden sm:inline">Trasferisci</span>
+            </Button>
+            <Button onClick={handleAdd} className="gap-2">
+              <Plus className="w-4 h-4" />
+              <span className="hidden sm:inline">Aggiungi</span>
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -141,13 +219,18 @@ const Index = () => {
       {isFormOpen && (
         <TransactionForm
           transaction={editingTransaction}
-          accounts={[
-            { id: 'main', label: 'Conto principale', type: 'main' },
-            { id: 'card', label: 'Carta di credito', type: 'card' },
-            ...piggyBanks.map(pb => ({ id: pb.id, label: pb.label, type: pb.type })),
-          ]}
+          accounts={allAccounts}
           onSubmit={handleSubmit}
           onCancel={handleCancel}
+        />
+      )}
+
+      {/* Transfer Form Modal */}
+      {isTransferOpen && (
+        <TransferForm
+          accounts={allAccounts}
+          onSubmit={handleTransfer}
+          onCancel={() => setIsTransferOpen(false)}
         />
       )}
     </div>
