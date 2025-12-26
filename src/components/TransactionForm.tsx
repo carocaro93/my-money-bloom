@@ -57,7 +57,7 @@ export function TransactionForm({ transaction, accounts, defaultType, defaultFlo
   const [amount, setAmount] = useState(transaction?.amount?.toString() || '');
   const [description, setDescription] = useState(transaction?.description || '');
   const [category, setCategory] = useState(transaction?.category || (transaction?.type === 'investment' ? INVESTMENT_CATEGORIES[0].id : CATEGORIES[0].id));
-  const [accountId, setAccountId] = useState(transaction?.accountId || accounts[0]?.id || 'main');
+  const [accountId, setAccountId] = useState(transaction?.accountId || accounts[0]?.id || '');
 
   // Transfer state
   const [isTransfer, setIsTransfer] = useState(false);
@@ -150,13 +150,20 @@ export function TransactionForm({ transaction, accounts, defaultType, defaultFlo
         }
       : undefined;
 
+    const finalAccountId = isTransfer ? fromAccount : accountId;
+    
+    // Non inviare se l'account non è valido
+    if (!finalAccountId) {
+      return;
+    }
+
     onSubmit({
       type,
       flowType: isTransfer ? 'expense' : flowType,
       amount: parseFloat(amount) || 0,
       description,
       category,
-      accountId: isTransfer ? fromAccount : accountId,
+      accountId: finalAccountId,
       recurrence,
       executionDate: executionConfig,
       probability: type === 'credit' ? probability : undefined,
