@@ -21,7 +21,7 @@ const Index = () => {
     deleteTransaction,
   } = useTransactions();
 
-  const { piggyBanks, addPiggyBank, deletePiggyBank } = usePiggyBanks();
+  const { piggyBanks, isLoading: isLoadingAccounts, addPiggyBank, deletePiggyBank } = usePiggyBanks();
   
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
