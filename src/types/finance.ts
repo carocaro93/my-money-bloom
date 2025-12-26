@@ -1,5 +1,6 @@
 export type TransactionType = 'transaction' | 'debt' | 'credit';
 export type FlowType = 'income' | 'expense';
+export type CreditProbability = 30 | 50 | 70 | 100;
 
 export interface DateConfig {
   isMonthOnly: boolean;
@@ -23,6 +24,7 @@ export interface Transaction {
   account: string;
   recurrence: RecurrenceConfig;
   executionDate?: DateConfig;
+  probability?: CreditProbability; // Solo per crediti
   createdAt: Date;
 }
 

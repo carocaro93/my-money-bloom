@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { CalendarIcon, X } from 'lucide-react';
-import { Transaction, TransactionType, FlowType, CATEGORIES, ACCOUNTS, DateConfig, RecurrenceConfig } from '@/types/finance';
+import { Transaction, TransactionType, FlowType, CreditProbability, CATEGORIES, ACCOUNTS, DateConfig, RecurrenceConfig } from '@/types/finance';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -79,6 +79,9 @@ export function TransactionForm({ transaction, onSubmit, onCancel }: Transaction
   const [settlementDate, setSettlementDate] = useState<Date | undefined>(new Date());
   const [isSettlementMonthOnly, setIsSettlementMonthOnly] = useState(false);
 
+  // Probability state for credits
+  const [probability, setProbability] = useState<CreditProbability>(transaction?.probability || 100);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -121,6 +124,7 @@ export function TransactionForm({ transaction, onSubmit, onCancel }: Transaction
       account,
       recurrence,
       executionDate: executionConfig,
+      probability: type === 'credit' ? probability : undefined,
     }, settlementData);
   };
 
@@ -251,6 +255,34 @@ export function TransactionForm({ transaction, onSubmit, onCancel }: Transaction
             </div>
           </div>
 
+          {/* Probability for Credits */}
+          {type === 'credit' && (
+            <div className="space-y-2 p-4 rounded-lg bg-success/10 border border-success/20">
+              <Label>Probabilità di incasso</Label>
+              <div className="grid grid-cols-4 gap-2">
+                {([30, 50, 70, 100] as const).map((prob) => (
+                  <button
+                    key={prob}
+                    type="button"
+                    onClick={() => setProbability(prob)}
+                    className={cn(
+                      "px-3 py-2 rounded-lg text-sm font-medium transition-all",
+                      probability === prob
+                        ? "bg-success text-success-foreground"
+                        : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                    )}
+                  >
+                    {prob}%
+                  </button>
+                ))}
+              </div>
+              {probability < 100 && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  Importo ponderato: {new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format((parseFloat(amount) || 0) * probability / 100)}
+                </p>
+              )}
+            </div>
+          )}
           {/* Recurring Toggle */}
           <div className="flex items-center justify-between p-4 rounded-lg bg-secondary">
             <div>
