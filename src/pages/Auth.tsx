@@ -30,7 +30,7 @@ const Auth = () => {
   }
 
   // Genera email fittizia dallo username
-  const generateFakeEmail = (username: string) => `${username.toLowerCase().trim()}@app.local`;
+  const generateFakeEmail = (username: string) => `${username.toLowerCase().trim()}@mailtest.com`;
 
   const validateUsername = (username: string): boolean => {
     // Username: solo lettere, numeri e underscore, min 3 caratteri
