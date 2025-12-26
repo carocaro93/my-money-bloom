@@ -7,21 +7,29 @@ import { TransactionForm } from '@/components/TransactionForm';
 import { PiggyBankManager } from '@/components/PiggyBankManager';
 import { QuickActions } from '@/components/QuickActions';
 import { useTransactions } from '@/hooks/useTransactions';
-import { usePiggyBanks } from '@/hooks/usePiggyBanks';
+import { useAccounts } from '@/hooks/useAccounts';
 import { useAuth } from '@/hooks/useAuth';
 import { Transaction, TransactionType, FlowType } from '@/types/finance';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+
 const Index = () => {
-  const { user, loading, signOut } = useAuth();
+  const { user, loading: authLoading, signOut } = useAuth();
   const { 
     transactions, 
+    loading: transactionsLoading,
     addTransaction, 
     updateTransaction, 
     deleteTransaction,
   } = useTransactions();
 
-  const { piggyBanks, addPiggyBank, deletePiggyBank } = usePiggyBanks();
+  const { 
+    allAccounts, 
+    piggyBanks, 
+    loading: accountsLoading,
+    addAccount, 
+    deleteAccount 
+  } = useAccounts();
   
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
@@ -29,8 +37,10 @@ const Index = () => {
   const [defaultFlowType, setDefaultFlowType] = useState<FlowType | undefined>(undefined);
   const { toast } = useToast();
 
+  const isLoading = authLoading || transactionsLoading || accountsLoading;
+
   // Show loading while checking auth
-  if (loading) {
+  if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -51,10 +61,11 @@ const Index = () => {
     });
   };
 
-  const allAccounts = [
+  // Combine default accounts with user accounts
+  const accountsForForm = [
     { id: 'main', label: 'Conto principale', type: 'main' },
     { id: 'card', label: 'Carta di credito', type: 'card' },
-    ...piggyBanks.map(pb => ({ id: pb.id, label: pb.label, type: pb.type })),
+    ...allAccounts.filter(acc => acc.type === 'piggybank'),
   ];
 
   const handleAdd = () => {
@@ -76,54 +87,68 @@ const Index = () => {
     setIsFormOpen(true);
   };
 
-  const handleDelete = (id: string) => {
-    deleteTransaction(id);
-    toast({
-      title: "Eliminato",
-      description: "La transazione è stata eliminata con successo.",
-    });
+  const handleDelete = async (id: string) => {
+    const success = await deleteTransaction(id);
+    if (success) {
+      toast({
+        title: "Eliminato",
+        description: "La transazione è stata eliminata con successo.",
+      });
+    }
   };
 
-  const handleSubmit = (
+  const handleAddPiggyBank = async (name: string) => {
+    await addAccount(name, 'piggybank');
+  };
+
+  const handleDeletePiggyBank = async (id: string) => {
+    await deleteAccount(id);
+  };
+
+  const handleSubmit = async (
     data: Omit<Transaction, 'id' | 'createdAt'>, 
     settlement?: { isSettled: boolean; settlementDate: Date | null; isMonthOnly: boolean },
     transfer?: { isTransfer: boolean; fromAccount: string; toAccount: string }
   ) => {
     if (editingTransaction) {
-      updateTransaction(editingTransaction.id, data);
-      toast({
-        title: "Aggiornato",
-        description: "La transazione è stata modificata con successo.",
-      });
-
-      // If settlement is requested, create the corresponding transaction
-      if (settlement?.isSettled && settlement.settlementDate) {
-        const settlementTransaction: Omit<Transaction, 'id' | 'createdAt'> = {
-          type: 'transaction',
-          flowType: data.type === 'debt' ? 'expense' : 'income',
-          amount: data.amount,
-          description: `${data.type === 'debt' ? 'Pagamento' : 'Incasso'}: ${data.description}`,
-          category: data.category,
-          account: data.account,
-          recurrence: {
-            isRecurring: false,
-            startDate: {
-              isMonthOnly: settlement.isMonthOnly,
-              date: settlement.settlementDate,
-              isIndefinite: false,
-            },
-            endDate: {
-              isMonthOnly: false,
-              date: null,
-              isIndefinite: true,
-            },
-          },
-        };
-        addTransaction(settlementTransaction);
+      const success = await updateTransaction(editingTransaction.id, data);
+      if (success) {
         toast({
-          title: data.type === 'debt' ? "Debito estinto" : "Credito incassato",
-          description: `Transazione di ${data.type === 'debt' ? 'pagamento' : 'incasso'} creata automaticamente.`,
+          title: "Aggiornato",
+          description: "La transazione è stata modificata con successo.",
         });
+
+        // If settlement is requested, create the corresponding transaction
+        if (settlement?.isSettled && settlement.settlementDate) {
+          const settlementTransaction: Omit<Transaction, 'id' | 'createdAt'> = {
+            type: 'transaction',
+            flowType: data.type === 'debt' ? 'expense' : 'income',
+            amount: data.amount,
+            description: `${data.type === 'debt' ? 'Pagamento' : 'Incasso'}: ${data.description}`,
+            category: data.category,
+            account: data.account,
+            recurrence: {
+              isRecurring: false,
+              startDate: {
+                isMonthOnly: settlement.isMonthOnly,
+                date: settlement.settlementDate,
+                isIndefinite: false,
+              },
+              endDate: {
+                isMonthOnly: false,
+                date: null,
+                isIndefinite: true,
+              },
+            },
+          };
+          const result = await addTransaction(settlementTransaction);
+          if (result) {
+            toast({
+              title: data.type === 'debt' ? "Debito estinto" : "Credito incassato",
+              description: `Transazione di ${data.type === 'debt' ? 'pagamento' : 'incasso'} creata automaticamente.`,
+            });
+          }
+        }
       }
     } else if (transfer?.isTransfer) {
       // Handle transfer - create two transactions
@@ -141,19 +166,23 @@ const Index = () => {
         description: `Trasferimento: ${data.description}`,
       };
 
-      addTransaction(expenseTransaction);
-      addTransaction(incomeTransaction);
+      const result1 = await addTransaction(expenseTransaction);
+      const result2 = await addTransaction(incomeTransaction);
 
-      toast({
-        title: "Trasferimento completato",
-        description: `${new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(data.amount)} trasferiti con successo.`,
-      });
+      if (result1 && result2) {
+        toast({
+          title: "Trasferimento completato",
+          description: `${new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(data.amount)} trasferiti con successo.`,
+        });
+      }
     } else {
-      addTransaction(data);
-      toast({
-        title: "Aggiunto",
-        description: "La nuova transazione è stata aggiunta.",
-      });
+      const result = await addTransaction(data);
+      if (result) {
+        toast({
+          title: "Aggiunto",
+          description: "La nuova transazione è stata aggiunta.",
+        });
+      }
     }
     setIsFormOpen(false);
     setEditingTransaction(null);
@@ -165,6 +194,13 @@ const Index = () => {
     setDefaultType(undefined);
     setDefaultFlowType(undefined);
   };
+
+  // Transform piggy banks for PiggyBankManager
+  const piggyBanksForManager = piggyBanks.map(pb => ({
+    id: pb.id,
+    label: pb.name,
+    type: pb.type as 'piggybank',
+  }));
 
   return (
     <div className="min-h-screen bg-background">
@@ -199,23 +235,31 @@ const Index = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-6 pb-28 md:pb-6 space-y-6">
-        <Dashboard transactions={transactions} onEdit={handleEdit} />
-        
-        <PiggyBankManager
-          transactions={transactions}
-          piggyBanks={piggyBanks}
-          onAddPiggyBank={addPiggyBank}
-          onDeletePiggyBank={deletePiggyBank}
-        />
-        
-        <div>
-          <h2 className="text-lg font-semibold mb-4">Tutte le Transazioni</h2>
-          <TransactionList 
-            transactions={transactions}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-          />
-        </div>
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : (
+          <>
+            <Dashboard transactions={transactions} onEdit={handleEdit} />
+            
+            <PiggyBankManager
+              transactions={transactions}
+              piggyBanks={piggyBanksForManager}
+              onAddPiggyBank={handleAddPiggyBank}
+              onDeletePiggyBank={handleDeletePiggyBank}
+            />
+            
+            <div>
+              <h2 className="text-lg font-semibold mb-4">Tutte le Transazioni</h2>
+              <TransactionList 
+                transactions={transactions}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+              />
+            </div>
+          </>
+        )}
       </main>
 
       {/* Quick Actions - Mobile Only */}
@@ -225,7 +269,7 @@ const Index = () => {
       {isFormOpen && (
         <TransactionForm
           transaction={editingTransaction}
-          accounts={allAccounts}
+          accounts={accountsForForm}
           defaultType={defaultType}
           defaultFlowType={defaultFlowType}
           onSubmit={handleSubmit}
