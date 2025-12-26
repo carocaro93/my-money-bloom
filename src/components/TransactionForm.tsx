@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
-import { CalendarIcon, X } from 'lucide-react';
+import { CalendarIcon, X, ArrowRight } from 'lucide-react';
 import { Transaction, TransactionType, FlowType, CreditProbability, CATEGORIES, INVESTMENT_CATEGORIES, DateConfig, RecurrenceConfig } from '@/types/finance';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,10 +25,16 @@ interface AccountOption {
   type: string;
 }
 
+interface TransferData {
+  isTransfer: boolean;
+  fromAccount: string;
+  toAccount: string;
+}
+
 interface TransactionFormProps {
   transaction?: Transaction | null;
   accounts: AccountOption[];
-  onSubmit: (data: Omit<Transaction, 'id' | 'createdAt'>, settlement?: SettlementData) => void;
+  onSubmit: (data: Omit<Transaction, 'id' | 'createdAt'>, settlement?: SettlementData, transfer?: TransferData) => void;
   onCancel: () => void;
 }
 
@@ -49,6 +55,11 @@ export function TransactionForm({ transaction, accounts, onSubmit, onCancel }: T
   const [description, setDescription] = useState(transaction?.description || '');
   const [category, setCategory] = useState(transaction?.category || (transaction?.type === 'investment' ? INVESTMENT_CATEGORIES[0].id : CATEGORIES[0].id));
   const [account, setAccount] = useState(transaction?.account || accounts[0]?.id || 'main');
+
+  // Transfer state
+  const [isTransfer, setIsTransfer] = useState(false);
+  const [fromAccount, setFromAccount] = useState(accounts.find(a => a.type === 'main')?.id || accounts[0]?.id || '');
+  const [toAccount, setToAccount] = useState(accounts.find(a => a.type === 'piggybank')?.id || accounts[1]?.id || '');
 
   // Update flowType and category when type changes
   const handleTypeChange = (newType: TransactionType) => {
@@ -128,17 +139,25 @@ export function TransactionForm({ transaction, accounts, onSubmit, onCancel }: T
         }
       : undefined;
 
+    const transferData: TransferData | undefined = isTransfer && type === 'transaction'
+      ? {
+          isTransfer: true,
+          fromAccount,
+          toAccount,
+        }
+      : undefined;
+
     onSubmit({
       type,
-      flowType,
+      flowType: isTransfer ? 'expense' : flowType,
       amount: parseFloat(amount) || 0,
       description,
       category,
-      account,
+      account: isTransfer ? fromAccount : account,
       recurrence,
       executionDate: executionConfig,
       probability: type === 'credit' ? probability : undefined,
-    }, settlementData);
+    }, settlementData, transferData);
   };
 
   const formatDateDisplay = (date: Date | undefined, isMonthOnly: boolean) => {
@@ -183,8 +202,23 @@ export function TransactionForm({ transaction, accounts, onSubmit, onCancel }: T
             </div>
           </div>
 
-          {/* Flow Type - only show for transactions, not for debt/credit/investment */}
+          {/* Transfer Toggle - only for transactions */}
           {type === 'transaction' && (
+            <div className="flex items-center justify-between p-4 rounded-lg bg-primary/10 border border-primary/20">
+              <div>
+                <Label htmlFor="transfer" className="text-base">Trasferimento</Label>
+                <p className="text-sm text-muted-foreground">Sposta fondi tra conti</p>
+              </div>
+              <Switch
+                id="transfer"
+                checked={isTransfer}
+                onCheckedChange={setIsTransfer}
+              />
+            </div>
+          )}
+
+          {/* Flow Type - only show for transactions when not transfer */}
+          {type === 'transaction' && !isTransfer && (
             <div className="space-y-2">
               <Label>Direzione</Label>
               <div className="grid grid-cols-2 gap-2">
@@ -251,22 +285,75 @@ export function TransactionForm({ transaction, accounts, onSubmit, onCancel }: T
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label>Conto</Label>
-              <Select value={account} onValueChange={setAccount}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {accounts.map((acc) => (
-                    <SelectItem key={acc.id} value={acc.id}>
-                      {acc.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {/* Regular Account - show when not transfer */}
+            {!isTransfer && (
+              <div className="space-y-2">
+                <Label>Conto</Label>
+                <Select value={account} onValueChange={setAccount}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {accounts.map((acc) => (
+                      <SelectItem key={acc.id} value={acc.id}>
+                        {acc.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
+
+          {/* Transfer Accounts - show when transfer is enabled */}
+          {type === 'transaction' && isTransfer && (
+            <div className="space-y-4 p-4 rounded-lg bg-primary/5 border border-primary/20">
+              <div className="flex items-center gap-2 text-primary">
+                <ArrowRight className="w-4 h-4" />
+                <span className="font-medium">Dettagli Trasferimento</span>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Da Conto</Label>
+                  <Select value={fromAccount} onValueChange={(value) => {
+                    setFromAccount(value);
+                    if (value === toAccount) {
+                      const newTo = accounts.find(a => a.id !== value)?.id || '';
+                      setToAccount(newTo);
+                    }
+                  }}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {accounts.map((acc) => (
+                        <SelectItem key={acc.id} value={acc.id}>
+                          {acc.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>A Conto</Label>
+                  <Select value={toAccount} onValueChange={setToAccount}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {accounts.filter(a => a.id !== fromAccount).map((acc) => (
+                        <SelectItem key={acc.id} value={acc.id}>
+                          {acc.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Probability for Credits */}
           {type === 'credit' && (
