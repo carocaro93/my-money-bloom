@@ -180,14 +180,19 @@ const Index = () => {
               <p className="text-xs text-muted-foreground">Gestisci le tue finanze</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <Button onClick={handleAdd} className="gap-2">
               <Plus className="w-4 h-4" />
               <span className="hidden sm:inline">Aggiungi</span>
             </Button>
-            <Button variant="ghost" size="icon" onClick={handleLogout} title="Logout">
-              <LogOut className="w-4 h-4" />
-            </Button>
+            <div className="flex items-center gap-2 pl-2 border-l border-border/50">
+              <span className="text-sm font-medium text-muted-foreground hidden sm:inline">
+                {user?.user_metadata?.username || 'Utente'}
+              </span>
+              <Button variant="ghost" size="icon" onClick={handleLogout} title="Logout">
+                <LogOut className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
         </div>
       </header>
