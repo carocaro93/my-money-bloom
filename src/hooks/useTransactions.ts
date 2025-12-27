@@ -37,10 +37,9 @@ const toSupabase = (t: Omit<Transaction, 'id' | 'createdAt'>, userId: string) =>
   description: t.description,
   category: t.category,
   account_id: t.accountId,
-  // Decommentare quando le colonne sono aggiunte al DB:
-  // recurrence: t.recurrence || null,
-  // execution_date: t.executionDate || null,
-  // probability: t.probability || null,
+  recurrence: t.recurrence || null,
+  execution_date: t.executionDate || null,
+  probability: t.probability || null,
 });
 
 export function useTransactions() {
@@ -146,10 +145,9 @@ export function useTransactions() {
         }
         supabaseUpdates.account_id = updates.accountId;
       }
-      // Decommentare quando le colonne sono aggiunte al DB:
-      // if (updates.recurrence !== undefined) supabaseUpdates.recurrence = updates.recurrence;
-      // if (updates.executionDate !== undefined) supabaseUpdates.execution_date = updates.executionDate;
-      // if (updates.probability !== undefined) supabaseUpdates.probability = updates.probability;
+      if (updates.recurrence !== undefined) supabaseUpdates.recurrence = updates.recurrence;
+      if (updates.executionDate !== undefined) supabaseUpdates.execution_date = updates.executionDate;
+      if (updates.probability !== undefined) supabaseUpdates.probability = updates.probability;
 
       const { error } = await supabase
         .from('transactions')
