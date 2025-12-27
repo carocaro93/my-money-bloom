@@ -156,8 +156,13 @@ export function useTransactions() {
         .eq('user_id', user.id);
 
       if (error) {
-        console.error('Errore aggiornamento transazione:', error);
-        toast.error('Errore nell\'aggiornamento della transazione');
+        console.error('Errore aggiornamento transazione:', {
+          error,
+          userId: user.id,
+          transactionId: id,
+          supabaseUpdates,
+        });
+        toast.error(`${error.message}${error.code ? ` (codice: ${error.code})` : ''}`);
         return;
       }
 
