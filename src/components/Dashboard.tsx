@@ -116,25 +116,32 @@ export function Dashboard({ transactions, onEdit }: DashboardProps) {
     );
   }, [filteredTransactions]);
 
-  // All debts (not filtered by month)
-  const allDebts = useMemo(() => {
-    return transactions.filter(t => t.type === 'debt');
-  }, [transactions]);
+  // Debts filtered by month
+  const filteredDebts = useMemo(() => {
+    return filteredTransactions.filter(t => t.type === 'debt');
+  }, [filteredTransactions]);
 
-  // All credits (not filtered by month)
-  const allCredits = useMemo(() => {
-    return transactions.filter(t => t.type === 'credit');
-  }, [transactions]);
+  // Credits filtered by month
+  const filteredCredits = useMemo(() => {
+    return filteredTransactions.filter(t => t.type === 'credit');
+  }, [filteredTransactions]);
 
-  // All investments (not filtered by month)
-  const allInvestments = useMemo(() => {
-    return transactions.filter(t => t.type === 'investment');
-  }, [transactions]);
+  // Investments filtered by month
+  const filteredInvestments = useMemo(() => {
+    return filteredTransactions.filter(t => t.type === 'investment');
+  }, [filteredTransactions]);
 
-  // All commitments (not filtered by month)
-  const allCommitments = useMemo(() => {
-    return transactions.filter(t => t.type === 'commitment');
-  }, [transactions]);
+  // Commitments filtered by month
+  const filteredCommitments = useMemo(() => {
+    return filteredTransactions.filter(t => t.type === 'commitment');
+  }, [filteredTransactions]);
+
+  // Counts for total balance sheet display
+  const totalCounts = useMemo(() => ({
+    credits: transactions.filter(t => t.type === 'credit').length,
+    debts: transactions.filter(t => t.type === 'debt').length,
+    commitments: transactions.filter(t => t.type === 'commitment').length,
+  }), [transactions]);
 
   // Total balance sheet (all transactions, not filtered)
   const totalBalanceSheet = useMemo(() => {
@@ -328,18 +335,18 @@ export function Dashboard({ transactions, onEdit }: DashboardProps) {
               <div className="text-center p-3 rounded-lg bg-card/50">
                 <p className="text-xs text-muted-foreground mb-1">Impegni</p>
                 <p className="text-lg font-bold text-commitment">{formatCurrency(totalBalanceSheet.commitments)}</p>
-                <p className="text-xs text-muted-foreground">{allCommitments.length} voci</p>
+                <p className="text-xs text-muted-foreground">{totalCounts.commitments} voci</p>
               </div>
             )}
             <div className="text-center p-3 rounded-lg bg-card/50">
               <p className="text-xs text-muted-foreground mb-1">Crediti</p>
               <p className="text-lg font-bold text-success">{formatCurrency(totalBalanceSheet.credits)}</p>
-              <p className="text-xs text-muted-foreground">{allCredits.length} voci</p>
+              <p className="text-xs text-muted-foreground">{totalCounts.credits} voci</p>
             </div>
             <div className="text-center p-3 rounded-lg bg-card/50">
               <p className="text-xs text-muted-foreground mb-1">Debiti</p>
               <p className="text-lg font-bold text-destructive">{formatCurrency(totalBalanceSheet.debts)}</p>
-              <p className="text-xs text-muted-foreground">{allDebts.length} voci</p>
+              <p className="text-xs text-muted-foreground">{totalCounts.debts} voci</p>
             </div>
           </div>
           
@@ -653,23 +660,23 @@ export function Dashboard({ transactions, onEdit }: DashboardProps) {
                 <h3 className="font-semibold">Riepilogo Debiti</h3>
               </div>
               <span className="text-2xl font-bold text-destructive">
-                {formatCurrency(totalBalanceSheet.debts)}
+                {formatCurrency(filteredDebts.reduce((sum, t) => sum + t.amount, 0))}
               </span>
             </div>
-            <p className="text-sm text-muted-foreground">{allDebts.length} debiti totali</p>
+            <p className="text-sm text-muted-foreground">{filteredDebts.length} debiti nel mese</p>
           </div>
 
           {/* Debts List */}
           <div className="glass rounded-2xl p-5">
             <h3 className="font-semibold mb-4">Elenco Debiti</h3>
             
-            {allDebts.length === 0 ? (
+            {filteredDebts.length === 0 ? (
               <p className="text-muted-foreground text-sm text-center py-6">
-                Nessun debito registrato
+                Nessun debito nel mese selezionato
               </p>
             ) : (
               <div className="space-y-3">
-                {allDebts.map(debt => (
+                {filteredDebts.map(debt => (
                   <div 
                     key={debt.id} 
                     className="flex items-center justify-between p-3 rounded-xl bg-card/50 hover:bg-card transition-colors"
@@ -717,23 +724,23 @@ export function Dashboard({ transactions, onEdit }: DashboardProps) {
                 <h3 className="font-semibold">Riepilogo Impegni</h3>
               </div>
               <span className="text-2xl font-bold text-commitment">
-                {formatCurrency(allCommitments.reduce((sum, t) => sum + t.amount, 0))}
+                {formatCurrency(filteredCommitments.reduce((sum, t) => sum + t.amount, 0))}
               </span>
             </div>
-            <p className="text-sm text-muted-foreground">{allCommitments.length} impegni totali</p>
+            <p className="text-sm text-muted-foreground">{filteredCommitments.length} impegni nel mese</p>
           </div>
 
           {/* Commitments List */}
           <div className="glass rounded-2xl p-5">
             <h3 className="font-semibold mb-4">Elenco Impegni</h3>
             
-            {allCommitments.length === 0 ? (
+            {filteredCommitments.length === 0 ? (
               <p className="text-muted-foreground text-sm text-center py-6">
-                Nessun impegno registrato
+                Nessun impegno nel mese selezionato
               </p>
             ) : (
               <div className="space-y-3">
-                {allCommitments.map(commitment => (
+                {filteredCommitments.map(commitment => (
                   <div 
                     key={commitment.id} 
                     className="flex items-center justify-between p-3 rounded-xl bg-card/50 hover:bg-card transition-colors"
@@ -786,23 +793,23 @@ export function Dashboard({ transactions, onEdit }: DashboardProps) {
                 )}
               </div>
               <span className="text-2xl font-bold text-success">
-                {formatCurrency(totalBalanceSheet.credits)}
+                {formatCurrency(filteredCredits.reduce((sum, t) => sum + getCreditAmount(t), 0))}
               </span>
             </div>
-            <p className="text-sm text-muted-foreground">{allCredits.length} crediti totali</p>
+            <p className="text-sm text-muted-foreground">{filteredCredits.length} crediti nel mese</p>
           </div>
 
           {/* Credits List */}
           <div className="glass rounded-2xl p-5">
             <h3 className="font-semibold mb-4">Elenco Crediti</h3>
             
-            {allCredits.length === 0 ? (
+            {filteredCredits.length === 0 ? (
               <p className="text-muted-foreground text-sm text-center py-6">
-                Nessun credito registrato
+                Nessun credito nel mese selezionato
               </p>
             ) : (
               <div className="space-y-3">
-                {allCredits.map(credit => (
+                {filteredCredits.map(credit => (
                   <div 
                     key={credit.id} 
                     className="flex items-center justify-between p-3 rounded-xl bg-card/50 hover:bg-card transition-colors"
@@ -864,23 +871,23 @@ export function Dashboard({ transactions, onEdit }: DashboardProps) {
                 <h3 className="font-semibold">Riepilogo Investimenti</h3>
               </div>
               <span className="text-2xl font-bold text-investment">
-                {formatCurrency(allInvestments.reduce((sum, t) => sum + t.amount, 0))}
+                {formatCurrency(filteredInvestments.reduce((sum, t) => sum + t.amount, 0))}
               </span>
             </div>
-            <p className="text-sm text-muted-foreground">{allInvestments.length} investimenti totali</p>
+            <p className="text-sm text-muted-foreground">{filteredInvestments.length} investimenti nel mese</p>
           </div>
 
           {/* Investments List */}
           <div className="glass rounded-2xl p-5">
             <h3 className="font-semibold mb-4">Elenco Investimenti</h3>
             
-            {allInvestments.length === 0 ? (
+            {filteredInvestments.length === 0 ? (
               <p className="text-muted-foreground text-sm text-center py-6">
-                Nessun investimento registrato
+                Nessun investimento nel mese selezionato
               </p>
             ) : (
               <div className="space-y-3">
-                {allInvestments.map(investment => (
+                {filteredInvestments.map(investment => (
                   <div 
                     key={investment.id} 
                     className="flex items-center justify-between p-3 rounded-xl bg-card/50 hover:bg-card transition-colors"
