@@ -89,8 +89,14 @@ export function TransactionForm({ transaction, accounts, defaultType, defaultFlo
   );
   const [isStartMonthOnly, setIsStartMonthOnly] = useState(transaction?.recurrence.startDate.isMonthOnly || false);
   const [isEndMonthOnly, setIsEndMonthOnly] = useState(transaction?.recurrence.endDate.isMonthOnly || false);
-  const [isEndIndefinite, setIsEndIndefinite] = useState(transaction?.recurrence.endDate.isIndefinite ?? true);
-  const [isStartIndefinite, setIsStartIndefinite] = useState(transaction?.recurrence.startDate.isIndefinite || false);
+
+  // Se esiste una data, non deve risultare “indefinita” (evita di perdere la data al salvataggio)
+  const [isStartIndefinite, setIsStartIndefinite] = useState(
+    transaction?.recurrence.startDate.date ? false : (transaction?.recurrence.startDate.isIndefinite || false)
+  );
+  const [isEndIndefinite, setIsEndIndefinite] = useState(
+    transaction?.recurrence.endDate.date ? false : (transaction?.recurrence.endDate.isIndefinite ?? true)
+  );
 
   const [executionDate, setExecutionDate] = useState<Date | undefined>(
     transaction?.executionDate?.date || undefined

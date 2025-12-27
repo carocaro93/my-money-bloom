@@ -576,6 +576,9 @@ export function Dashboard({ transactions, onEdit }: DashboardProps) {
                         <p className="text-xs text-muted-foreground">
                           {getCategoryLabel(expense.category)}
                         </p>
+                        <p className="text-xs text-muted-foreground">
+                          Inizio: {formatDate(expense.recurrence.startDate.date, expense.recurrence.startDate.isMonthOnly)} • Fine: {formatDate(expense.recurrence.endDate.date, expense.recurrence.endDate.isMonthOnly)}
+                        </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
@@ -625,6 +628,9 @@ export function Dashboard({ transactions, onEdit }: DashboardProps) {
                         <p className="font-medium">{income.description}</p>
                         <p className="text-xs text-muted-foreground">
                           {getCategoryLabel(income.category)}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Inizio: {formatDate(income.recurrence.startDate.date, income.recurrence.startDate.isMonthOnly)} • Fine: {formatDate(income.recurrence.endDate.date, income.recurrence.endDate.isMonthOnly)}
                         </p>
                       </div>
                     </div>
