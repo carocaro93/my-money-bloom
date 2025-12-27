@@ -15,9 +15,21 @@ import {
 export type CalendarProps = React.ComponentProps<typeof DayPicker>;
 
 function Calendar({ className, classNames, showOutsideDays = true, ...props }: CalendarProps) {
-  const [displayMonth, setDisplayMonth] = React.useState<Date>(
-    props.selected instanceof Date ? props.selected : new Date()
-  );
+  const getInitialMonth = () => {
+    if (props.selected instanceof Date) {
+      return props.selected;
+    }
+    return new Date();
+  };
+
+  const [displayMonth, setDisplayMonth] = React.useState<Date>(getInitialMonth);
+
+  // Sincronizza displayMonth quando cambia la prop selected
+  React.useEffect(() => {
+    if (props.selected instanceof Date) {
+      setDisplayMonth(props.selected);
+    }
+  }, [props.selected]);
 
   const months = [
     "Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno",
