@@ -45,18 +45,18 @@ function isTransactionInMonth(transaction: Transaction, selectedMonth: Date): bo
     const startCfg = recurrence.startDate;
     const endCfg = recurrence.endDate;
 
-    // Start: se non è “indefinita” deve esistere una data valida, altrimenti NON conteggiamo
-    const startOk = startCfg.isIndefinite
-      ? true
-      : startCfg.date
-        ? !isAfter(startCfg.isMonthOnly ? startOfMonth(startCfg.date) : startCfg.date, monthEnd)
+    // Start: se esiste una data valida, la rispettiamo sempre (anche se "indefinita" è erroneamente true)
+    const startOk = startCfg.date
+      ? !isAfter(startCfg.isMonthOnly ? startOfMonth(startCfg.date) : startCfg.date, monthEnd)
+      : startCfg.isIndefinite
+        ? true
         : false;
 
-    // End: se non è “indefinita” deve esistere una data valida, altrimenti NON conteggiamo
-    const endOk = endCfg.isIndefinite
-      ? true
-      : endCfg.date
-        ? !isBefore(endCfg.isMonthOnly ? endOfMonth(endCfg.date) : endCfg.date, monthStart)
+    // End: se esiste una data valida, la rispettiamo sempre (anche se "indefinita" è erroneamente true)
+    const endOk = endCfg.date
+      ? !isBefore(endCfg.isMonthOnly ? endOfMonth(endCfg.date) : endCfg.date, monthStart)
+      : endCfg.isIndefinite
+        ? true
         : false;
 
     return startOk && endOk;
