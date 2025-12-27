@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
+import { parseISO, parse, isValid } from 'date-fns';
 import { DateConfig, RecurrenceConfig, Transaction } from '@/types/finance';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/hooks/useAuth';
@@ -15,7 +16,32 @@ const DEFAULT_RECURRENCE: RecurrenceConfig = {
 
 const parseDateValue = (value: unknown): Date | null => {
   if (!value) return null;
-  const d = value instanceof Date ? value : new Date(String(value));
+  if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value;
+
+  if (typeof value === 'string') {
+    const raw = value.trim();
+
+    // 1) ISO (es: 2025-12-27 / 2025-12-27T10:00:00.000Z)
+    try {
+      const iso = parseISO(raw);
+      if (isValid(iso)) return iso;
+    } catch {
+      // ignore
+    }
+
+    // 2) Formati legacy comuni (es: 27/12/2025)
+    const legacyFormats = ['dd/MM/yyyy', 'dd-MM-yyyy', 'yyyy-MM'];
+    for (const fmt of legacyFormats) {
+      const d = parse(raw, fmt, new Date());
+      if (isValid(d)) return d;
+    }
+
+    // 3) Fallback JS
+    const js = new Date(raw);
+    return Number.isNaN(js.getTime()) ? null : js;
+  }
+
+  const d = new Date(String(value));
   return Number.isNaN(d.getTime()) ? null : d;
 };
 
