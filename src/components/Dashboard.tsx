@@ -38,35 +38,41 @@ function generateMonthOptions() {
 function isTransactionInMonth(transaction: Transaction, selectedMonth: Date): boolean {
   const monthStart = startOfMonth(selectedMonth);
   const monthEnd = endOfMonth(selectedMonth);
-  
+
   const { recurrence, executionDate, type } = transaction;
-  
+
   if (recurrence.isRecurring) {
-    const startDate = recurrence.startDate.date;
-    const endDate = recurrence.endDate.date;
-    const isStartIndefinite = recurrence.startDate.isIndefinite;
-    const isEndIndefinite = recurrence.endDate.isIndefinite;
-    
-    const startOk = isStartIndefinite || !startDate || 
-      isBefore(startOfMonth(startDate), monthEnd) || isSameMonth(startDate, selectedMonth);
-    
-    const endOk = isEndIndefinite || !endDate || 
-      isAfter(endOfMonth(endDate), monthStart) || isSameMonth(endDate, selectedMonth);
-    
+    const startCfg = recurrence.startDate;
+    const endCfg = recurrence.endDate;
+
+    // Start: se non è “indefinita” deve esistere una data valida, altrimenti NON conteggiamo
+    const startOk = startCfg.isIndefinite
+      ? true
+      : startCfg.date
+        ? !isAfter(startCfg.isMonthOnly ? startOfMonth(startCfg.date) : startCfg.date, monthEnd)
+        : false;
+
+    // End: se non è “indefinita” deve esistere una data valida, altrimenti NON conteggiamo
+    const endOk = endCfg.isIndefinite
+      ? true
+      : endCfg.date
+        ? !isBefore(endCfg.isMonthOnly ? endOfMonth(endCfg.date) : endCfg.date, monthStart)
+        : false;
+
     return startOk && endOk;
-  } else {
-    const transactionDate = recurrence.startDate.date;
-    
-    if ((type === 'debt' || type === 'credit') && executionDate?.date) {
-      return isSameMonth(executionDate.date, selectedMonth);
-    }
-    
-    if (transactionDate) {
-      return isSameMonth(transactionDate, selectedMonth);
-    }
-    
-    return false;
   }
+
+  const transactionDate = recurrence.startDate.date;
+
+  if ((type === 'debt' || type === 'credit') && executionDate?.date) {
+    return isSameMonth(executionDate.date, selectedMonth);
+  }
+
+  if (transactionDate) {
+    return isSameMonth(transactionDate, selectedMonth);
+  }
+
+  return false;
 }
 
 export function Dashboard({ transactions, onEdit }: DashboardProps) {
