@@ -1,11 +1,66 @@
 import { useState, useCallback, useEffect } from 'react';
-import { Transaction } from '@/types/finance';
+import { DateConfig, RecurrenceConfig, Transaction } from '@/types/finance';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const isUuid = (value: unknown): value is string => typeof value === 'string' && UUID_RE.test(value);
+
+const DEFAULT_RECURRENCE: RecurrenceConfig = {
+  isRecurring: false,
+  startDate: { isMonthOnly: false, date: null, isIndefinite: false },
+  endDate: { isMonthOnly: false, date: null, isIndefinite: true },
+};
+
+const parseDateValue = (value: unknown): Date | null => {
+  if (!value) return null;
+  const d = value instanceof Date ? value : new Date(String(value));
+  return Number.isNaN(d.getTime()) ? null : d;
+};
+
+const normalizeDateConfig = (input: any): DateConfig | undefined => {
+  if (input == null) return undefined;
+
+  // Se la colonna è di tipo DATE/TEXT nel DB potremmo ricevere una stringa
+  if (typeof input === 'string' || input instanceof Date) {
+    return { isMonthOnly: false, date: parseDateValue(input), isIndefinite: false };
+  }
+
+  if (typeof input === 'object') {
+    return {
+      isMonthOnly: !!input.isMonthOnly,
+      date: parseDateValue(input.date),
+      isIndefinite: input.isIndefinite ?? false,
+    };
+  }
+
+  return undefined;
+};
+
+const serializeDateConfig = (input?: DateConfig | null) => {
+  if (!input) return null;
+  return {
+    isMonthOnly: !!input.isMonthOnly,
+    date: input.date ? input.date.toISOString() : null,
+    isIndefinite: input.isIndefinite ?? false,
+  };
+};
+
+const normalizeRecurrence = (input: any): RecurrenceConfig => {
+  if (!input || typeof input !== 'object') return DEFAULT_RECURRENCE;
+  return {
+    isRecurring: !!input.isRecurring,
+    startDate: normalizeDateConfig(input.startDate) ?? DEFAULT_RECURRENCE.startDate,
+    endDate: normalizeDateConfig(input.endDate) ?? DEFAULT_RECURRENCE.endDate,
+  };
+};
+
+const serializeRecurrence = (input: RecurrenceConfig) => ({
+  isRecurring: !!input.isRecurring,
+  startDate: serializeDateConfig(input.startDate),
+  endDate: serializeDateConfig(input.endDate),
+});
 
 // Helper per convertire da Supabase a Transaction
 const fromSupabase = (row: any): Transaction => ({
@@ -16,19 +71,13 @@ const fromSupabase = (row: any): Transaction => ({
   description: row.description || '',
   category: row.category || '',
   accountId: row.account_id, // UUID dell'account
-  recurrence: row.recurrence || {
-    isRecurring: false,
-    startDate: { isMonthOnly: false, date: null, isIndefinite: false },
-    endDate: { isMonthOnly: false, date: null, isIndefinite: true },
-  },
-  executionDate: row.execution_date,
-  probability: row.probability,
+  recurrence: normalizeRecurrence(row.recurrence),
+  executionDate: normalizeDateConfig(row.execution_date),
+  probability: row.probability ?? undefined,
   createdAt: new Date(row.created_at),
 });
 
 // Helper per convertire da Transaction a Supabase
-// NOTA: recurrence, execution_date, probability richiedono colonne JSONB/TEXT nel DB
-// Per ora le salviamo solo se esistono le colonne, altrimenti Supabase darà errore
 const toSupabase = (t: Omit<Transaction, 'id' | 'createdAt'>, userId: string) => ({
   user_id: userId,
   type: t.type,
@@ -37,9 +86,9 @@ const toSupabase = (t: Omit<Transaction, 'id' | 'createdAt'>, userId: string) =>
   description: t.description,
   category: t.category,
   account_id: t.accountId,
-  recurrence: t.recurrence || null,
-  execution_date: t.executionDate || null,
-  probability: t.probability || null,
+  recurrence: serializeRecurrence(t.recurrence),
+  execution_date: serializeDateConfig(t.executionDate ?? null),
+  probability: t.probability ?? null,
 });
 
 export function useTransactions() {
@@ -145,9 +194,9 @@ export function useTransactions() {
         }
         supabaseUpdates.account_id = updates.accountId;
       }
-      if (updates.recurrence !== undefined) supabaseUpdates.recurrence = updates.recurrence;
-      if (updates.executionDate !== undefined) supabaseUpdates.execution_date = updates.executionDate;
-      if (updates.probability !== undefined) supabaseUpdates.probability = updates.probability;
+      if (updates.recurrence !== undefined) supabaseUpdates.recurrence = serializeRecurrence(updates.recurrence);
+      if (updates.executionDate !== undefined) supabaseUpdates.execution_date = serializeDateConfig(updates.executionDate);
+      if (updates.probability !== undefined) supabaseUpdates.probability = updates.probability ?? null;
 
       const { error } = await supabase
         .from('transactions')
