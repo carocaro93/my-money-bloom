@@ -27,7 +27,6 @@ const fromSupabase = (row: any): Transaction => ({
 });
 
 // Helper per convertire da Transaction a Supabase
-// NOTA: inviamo solo le colonne base che esistono nel DB
 const toSupabase = (t: Omit<Transaction, 'id' | 'createdAt'>, userId: string) => ({
   user_id: userId,
   type: t.type,
@@ -36,6 +35,9 @@ const toSupabase = (t: Omit<Transaction, 'id' | 'createdAt'>, userId: string) =>
   description: t.description,
   category: t.category,
   account_id: t.accountId,
+  recurrence: t.recurrence || null,
+  execution_date: t.executionDate || null,
+  probability: t.probability || null,
 });
 
 export function useTransactions() {
@@ -127,7 +129,7 @@ export function useTransactions() {
     }
 
     try {
-      // Converti gli updates nel formato Supabase (solo colonne base)
+      // Converti gli updates nel formato Supabase
       const supabaseUpdates: any = {};
       if (updates.type !== undefined) supabaseUpdates.type = updates.type;
       if (updates.flowType !== undefined) supabaseUpdates.flow_type = updates.flowType;
@@ -141,6 +143,9 @@ export function useTransactions() {
         }
         supabaseUpdates.account_id = updates.accountId;
       }
+      if (updates.recurrence !== undefined) supabaseUpdates.recurrence = updates.recurrence;
+      if (updates.executionDate !== undefined) supabaseUpdates.execution_date = updates.executionDate;
+      if (updates.probability !== undefined) supabaseUpdates.probability = updates.probability;
 
       const { error } = await supabase
         .from('transactions')
