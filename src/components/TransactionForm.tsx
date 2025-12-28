@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { format, addMonths, startOfMonth } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { CalendarIcon, X, ArrowRight } from 'lucide-react';
@@ -32,12 +32,22 @@ interface TransferData {
   toAccount: string;
 }
 
+interface ReimbursementData {
+  isReimbursable: boolean;
+  debtTransaction: Omit<Transaction, 'id' | 'createdAt'>;
+}
+
 interface TransactionFormProps {
   transaction?: Transaction | null;
   accounts: AccountOption[];
   defaultType?: TransactionType;
   defaultFlowType?: FlowType;
-  onSubmit: (data: Omit<Transaction, 'id' | 'createdAt'>, settlement?: SettlementData, transfer?: TransferData) => void;
+  onSubmit: (
+    data: Omit<Transaction, 'id' | 'createdAt'>,
+    settlement?: SettlementData,
+    transfer?: TransferData,
+    reimbursement?: ReimbursementData
+  ) => void;
   onCancel: () => void;
 }
 
@@ -133,14 +143,6 @@ export function TransactionForm({ transaction, accounts, defaultType, defaultFlo
     return startOfMonth(addMonths(startDate, calculatedMonths - 1));
   }, [calculatedMonths, startDate]);
 
-  // Auto-update end date when reimbursement is active
-  useEffect(() => {
-    if (isReimbursable && calculatedEndDate) {
-      setEndDate(calculatedEndDate);
-      setIsEndIndefinite(false);
-      setIsRecurring(true);
-    }
-  }, [isReimbursable, calculatedEndDate]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -210,16 +212,79 @@ export function TransactionForm({ transaction, accounts, defaultType, defaultFlo
       return;
     }
 
-    // Se "Da rimborsare" è attivo, genera un debito ricorrente invece della transazione
-    const finalType = isReimbursable ? 'debt' : type;
-    const finalFlowType = isReimbursable ? 'expense' : (isTransfer ? 'expense' : flowType);
-    const finalAmount = isReimbursable ? (parseFloat(installmentAmount) || 0) : (parseFloat(amount) || 0);
+    // Se "Da rimborsare" è attivo: crea l'entrata (non ricorrente) + genera un debito ricorrente separato
+    if (isReimbursable) {
+      const total = parseFloat(amount) || 0;
+      const installment = parseFloat(installmentAmount) || 0;
+
+      if (total <= 0) {
+        toast.error('Inserisci un importo entrata valido');
+        return;
+      }
+      if (installment <= 0) {
+        toast.error('Inserisci un importo rata valido');
+        return;
+      }
+      if (!startDate) {
+        toast.error('Seleziona la data di inizio rimborso');
+        return;
+      }
+      if (!calculatedEndDate || calculatedMonths <= 0) {
+        toast.error('Impossibile calcolare la durata del rimborso');
+        return;
+      }
+
+      const incomeRecurrence: RecurrenceConfig = {
+        isRecurring: false,
+        startDate: { isMonthOnly: false, date: null, isIndefinite: true },
+        endDate: { isMonthOnly: false, date: null, isIndefinite: true },
+      };
+
+      const incomeData: Omit<Transaction, 'id' | 'createdAt'> = {
+        type,
+        flowType: isTransfer ? 'expense' : flowType,
+        amount: total,
+        description,
+        category,
+        accountId: finalAccountId,
+        recurrence: incomeRecurrence,
+        executionDate: executionConfig,
+        probability: undefined,
+      };
+
+      const debtRecurrence: RecurrenceConfig = {
+        isRecurring: true,
+        startDate: {
+          isMonthOnly: true,
+          date: startOfMonth(startDate),
+          isIndefinite: false,
+        },
+        endDate: {
+          isMonthOnly: true,
+          date: calculatedEndDate,
+          isIndefinite: false,
+        },
+      };
+
+      const debtTransaction: Omit<Transaction, 'id' | 'createdAt'> = {
+        type: 'debt',
+        flowType: 'expense',
+        amount: installment,
+        description: `${description} (rimborso)`,
+        category,
+        accountId: finalAccountId,
+        recurrence: debtRecurrence,
+      };
+
+      onSubmit(incomeData, settlementData, transferData, { isReimbursable: true, debtTransaction });
+      return;
+    }
 
     onSubmit({
-      type: finalType,
-      flowType: finalFlowType,
-      amount: finalAmount,
-      description: isReimbursable ? `${description} (rimborso)` : description,
+      type,
+      flowType: isTransfer ? 'expense' : flowType,
+      amount: parseFloat(amount) || 0,
+      description,
       category,
       accountId: finalAccountId,
       recurrence,
@@ -474,13 +539,15 @@ export function TransactionForm({ transaction, accounts, defaultType, defaultFlo
                   onCheckedChange={(checked) => {
                     setIsReimbursable(checked);
                     if (checked) {
-                      setIsRecurring(true);
-                      setIsEndIndefinite(false);
+                      // L'entrata rimane NON ricorrente: la ricorrenza verrà messa nel debito generato
+                      setIsRecurring(false);
+                      setIsStartIndefinite(false);
+                      setIsEndIndefinite(true);
+                      setIsStartMonthOnly(true);
                     }
                   }}
                 />
               </div>
-              
               {isReimbursable && (
                 <div className="space-y-4">
                   <div className="space-y-2">
@@ -493,6 +560,38 @@ export function TransactionForm({ transaction, accounts, defaultType, defaultFlo
                       value={installmentAmount}
                       onChange={(e) => setInstallmentAmount(e.target.value)}
                     />
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label>Inizio rimborso</Label>
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          id="reimbStartMonthOnly"
+                          checked={isStartMonthOnly}
+                          onCheckedChange={(checked) => setIsStartMonthOnly(checked as boolean)}
+                        />
+                        <label htmlFor="reimbStartMonthOnly" className="text-sm text-muted-foreground">
+                          Solo mese
+                        </label>
+                      </div>
+                    </div>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className="w-full justify-start">
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {formatDateDisplay(startDate, isStartMonthOnly)}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar
+                          mode="single"
+                          selected={startDate}
+                          onSelect={setStartDate}
+                          locale={it}
+                        />
+                      </PopoverContent>
+                    </Popover>
                   </div>
                   
                   {calculatedMonths > 0 && (
@@ -516,18 +615,19 @@ export function TransactionForm({ transaction, accounts, defaultType, defaultFlo
           )}
 
           {/* Recurring Toggle */}
-          <div className="flex items-center justify-between p-4 rounded-lg bg-secondary">
-            <div>
-              <Label htmlFor="recurring" className="text-base">Transazione Ricorrente</Label>
-              <p className="text-sm text-muted-foreground">Ripeti ogni mese</p>
+          {!isReimbursable && (
+            <div className="flex items-center justify-between p-4 rounded-lg bg-secondary">
+              <div>
+                <Label htmlFor="recurring" className="text-base">Transazione Ricorrente</Label>
+                <p className="text-sm text-muted-foreground">Ripeti ogni mese</p>
+              </div>
+              <Switch
+                id="recurring"
+                checked={isRecurring}
+                onCheckedChange={setIsRecurring}
+              />
             </div>
-            <Switch
-              id="recurring"
-              checked={isRecurring}
-              onCheckedChange={setIsRecurring}
-              disabled={isReimbursable}
-            />
-          </div>
+          )}
 
           {/* Date Configuration */}
           {isRecurring ? (

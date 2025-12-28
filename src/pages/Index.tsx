@@ -86,7 +86,8 @@ const Index = () => {
   const handleSubmit = (
     data: Omit<Transaction, 'id' | 'createdAt'>, 
     settlement?: { isSettled: boolean; settlementDate: Date | null; isMonthOnly: boolean },
-    transfer?: { isTransfer: boolean; fromAccount: string; toAccount: string }
+    transfer?: { isTransfer: boolean; fromAccount: string; toAccount: string },
+    reimbursement?: { isReimbursable: boolean; debtTransaction: Omit<Transaction, 'id' | 'createdAt'> }
   ) => {
     if (editingTransaction) {
       updateTransaction(editingTransaction.id, data);
@@ -146,6 +147,15 @@ const Index = () => {
       toast({
         title: "Trasferimento completato",
         description: `${new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(data.amount)} trasferiti con successo.`,
+      });
+    } else if (reimbursement?.isReimbursable) {
+      // Crea l'entrata + genera automaticamente un debito ricorrente
+      addTransaction(data);
+      addTransaction(reimbursement.debtTransaction);
+
+      toast({
+        title: "Aggiunto",
+        description: "Entrata registrata e debito ricorrente creato automaticamente.",
       });
     } else {
       addTransaction(data);
