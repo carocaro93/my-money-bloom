@@ -144,22 +144,35 @@ export function Dashboard({ transactions, onEdit }: DashboardProps) {
   }), [transactions]);
 
   // Calcola mesi rimanenti di una ricorrenza dal mese successivo a quello corrente
+  // Se la ricorrenza deve ancora iniziare, restituisce la durata totale
   const getRemainingMonths = (t: Transaction): number => {
     if (!t.recurrence.isRecurring) return 1;
     
     const now = new Date();
     const nextMonth = startOfMonth(addMonths(now, 1));
     
+    const startCfg = t.recurrence.startDate;
     const endCfg = t.recurrence.endDate;
+    
     // Se fine indefinita o senza data, consideriamo solo 1 mese (non moltiplicare)
     if (endCfg.isIndefinite || !endCfg.date) return 1;
     
+    const startDate = startCfg.date 
+      ? (startCfg.isMonthOnly ? startOfMonth(startCfg.date) : startCfg.date)
+      : nextMonth;
     const endDate = endCfg.isMonthOnly ? endOfMonth(endCfg.date) : endCfg.date;
     
     // Se la ricorrenza è già finita, 0 mesi rimanenti
     if (isBefore(endDate, nextMonth)) return 0;
     
-    // Mesi rimanenti = da nextMonth fino a endDate (inclusi)
+    // Se la ricorrenza deve ancora iniziare (startDate > mese corrente)
+    // restituisce la durata totale della ricorrenza
+    if (isAfter(startOfMonth(startDate), startOfMonth(now))) {
+      const totalMonths = differenceInMonths(endOfMonth(endDate), startOfMonth(startDate)) + 1;
+      return Math.max(1, totalMonths);
+    }
+    
+    // Ricorrenza già iniziata: mesi rimanenti = da nextMonth fino a endDate (inclusi)
     const months = differenceInMonths(endOfMonth(endDate), nextMonth) + 1;
     return Math.max(0, months);
   };
