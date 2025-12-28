@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { format } from 'date-fns';
+import { useState, useEffect, useMemo } from 'react';
+import { format, addMonths, startOfMonth } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { CalendarIcon, X, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
@@ -115,6 +115,32 @@ export function TransactionForm({ transaction, accounts, defaultType, defaultFlo
 
   // Probability state for credits
   const [probability, setProbability] = useState<CreditProbability>(transaction?.probability || 100);
+
+  // Reimbursement state for expenses
+  const [isReimbursable, setIsReimbursable] = useState(false);
+  const [installmentAmount, setInstallmentAmount] = useState('');
+  
+  // Calculate months and end date for reimbursement
+  const calculatedMonths = useMemo(() => {
+    const total = parseFloat(amount) || 0;
+    const installment = parseFloat(installmentAmount) || 0;
+    if (installment <= 0 || total <= 0) return 0;
+    return Math.ceil(total / installment);
+  }, [amount, installmentAmount]);
+
+  const calculatedEndDate = useMemo(() => {
+    if (calculatedMonths <= 0 || !startDate) return undefined;
+    return startOfMonth(addMonths(startDate, calculatedMonths - 1));
+  }, [calculatedMonths, startDate]);
+
+  // Auto-update end date when reimbursement is active
+  useEffect(() => {
+    if (isReimbursable && calculatedEndDate) {
+      setEndDate(calculatedEndDate);
+      setIsEndIndefinite(false);
+      setIsRecurring(true);
+    }
+  }, [isReimbursable, calculatedEndDate]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -428,6 +454,62 @@ export function TransactionForm({ transaction, accounts, defaultType, defaultFlo
               )}
             </div>
           )}
+
+          {/* Reimbursement Section for Expenses */}
+          {type === 'transaction' && flowType === 'expense' && !isTransfer && (
+            <div className="space-y-4 p-4 rounded-lg bg-warning/10 border border-warning/20">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label htmlFor="reimbursable" className="text-base">Da rimborsare</Label>
+                  <p className="text-sm text-muted-foreground">Imposta rate di rimborso</p>
+                </div>
+                <Switch
+                  id="reimbursable"
+                  checked={isReimbursable}
+                  onCheckedChange={(checked) => {
+                    setIsReimbursable(checked);
+                    if (checked) {
+                      setIsRecurring(true);
+                      setIsEndIndefinite(false);
+                    }
+                  }}
+                />
+              </div>
+              
+              {isReimbursable && (
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="installment">Importo rata mensile (€)</Label>
+                    <Input
+                      id="installment"
+                      type="number"
+                      step="0.01"
+                      placeholder="0.00"
+                      value={installmentAmount}
+                      onChange={(e) => setInstallmentAmount(e.target.value)}
+                    />
+                  </div>
+                  
+                  {calculatedMonths > 0 && (
+                    <div className="p-3 rounded-lg bg-background/50 space-y-1">
+                      <p className="text-sm font-medium">
+                        Durata calcolata: <span className="text-primary">{calculatedMonths} mesi</span>
+                      </p>
+                      {calculatedEndDate && (
+                        <p className="text-xs text-muted-foreground">
+                          Fine prevista: {format(calculatedEndDate, 'MMMM yyyy', { locale: it })}
+                        </p>
+                      )}
+                      <p className="text-xs text-muted-foreground">
+                        Totale rate: {new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format((parseFloat(installmentAmount) || 0) * calculatedMonths)}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Recurring Toggle */}
           <div className="flex items-center justify-between p-4 rounded-lg bg-secondary">
             <div>
@@ -438,6 +520,7 @@ export function TransactionForm({ transaction, accounts, defaultType, defaultFlo
               id="recurring"
               checked={isRecurring}
               onCheckedChange={setIsRecurring}
+              disabled={isReimbursable}
             />
           </div>
 
