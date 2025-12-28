@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { TrendingUp, TrendingDown, Wallet, CalendarDays, RefreshCw, FileText, Pencil, LineChart, CalendarCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Transaction, CATEGORIES, INVESTMENT_CATEGORIES } from '@/types/finance';
-import { format, isSameMonth, isAfter, isBefore, startOfMonth, endOfMonth, isPast } from 'date-fns';
+import { format, isSameMonth, isAfter, isBefore, startOfMonth, endOfMonth, isPast, differenceInMonths, addMonths } from 'date-fns';
 import { it } from 'date-fns/locale';
 import {
   Select,
@@ -143,6 +143,27 @@ export function Dashboard({ transactions, onEdit }: DashboardProps) {
     commitments: transactions.filter(t => t.type === 'commitment').length,
   }), [transactions]);
 
+  // Calcola mesi rimanenti di una ricorrenza dal mese successivo a quello corrente
+  const getRemainingMonths = (t: Transaction): number => {
+    if (!t.recurrence.isRecurring) return 1;
+    
+    const now = new Date();
+    const nextMonth = startOfMonth(addMonths(now, 1));
+    
+    const endCfg = t.recurrence.endDate;
+    // Se fine indefinita o senza data, consideriamo solo 1 mese (non moltiplicare)
+    if (endCfg.isIndefinite || !endCfg.date) return 1;
+    
+    const endDate = endCfg.isMonthOnly ? endOfMonth(endCfg.date) : endCfg.date;
+    
+    // Se la ricorrenza è già finita, 0 mesi rimanenti
+    if (isBefore(endDate, nextMonth)) return 0;
+    
+    // Mesi rimanenti = da nextMonth fino a endDate (inclusi)
+    const months = differenceInMonths(endOfMonth(endDate), nextMonth) + 1;
+    return Math.max(0, months);
+  };
+
   // Total balance sheet (all transactions, not filtered)
   const totalBalanceSheet = useMemo(() => {
     const totalCredits = transactions
@@ -151,7 +172,7 @@ export function Dashboard({ transactions, onEdit }: DashboardProps) {
     
     const totalDebts = transactions
       .filter(t => t.type === 'debt')
-      .reduce((sum, t) => sum + t.amount, 0);
+      .reduce((sum, t) => sum + t.amount * getRemainingMonths(t), 0);
 
     const totalCommitments = showCommitments 
       ? transactions.filter(t => t.type === 'commitment').reduce((sum, t) => sum + t.amount, 0)
