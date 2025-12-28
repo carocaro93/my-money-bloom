@@ -210,11 +210,16 @@ export function TransactionForm({ transaction, accounts, defaultType, defaultFlo
       return;
     }
 
+    // Se "Da rimborsare" è attivo, genera un debito ricorrente invece della transazione
+    const finalType = isReimbursable ? 'debt' : type;
+    const finalFlowType = isReimbursable ? 'expense' : (isTransfer ? 'expense' : flowType);
+    const finalAmount = isReimbursable ? (parseFloat(installmentAmount) || 0) : (parseFloat(amount) || 0);
+
     onSubmit({
-      type,
-      flowType: isTransfer ? 'expense' : flowType,
-      amount: parseFloat(amount) || 0,
-      description,
+      type: finalType,
+      flowType: finalFlowType,
+      amount: finalAmount,
+      description: isReimbursable ? `${description} (rimborso)` : description,
       category,
       accountId: finalAccountId,
       recurrence,
@@ -455,13 +460,13 @@ export function TransactionForm({ transaction, accounts, defaultType, defaultFlo
             </div>
           )}
 
-          {/* Reimbursement Section for Expenses */}
-          {type === 'transaction' && flowType === 'expense' && !isTransfer && (
+          {/* Reimbursement Section for Income - generates a recurring debt */}
+          {type === 'transaction' && flowType === 'income' && !isTransfer && (
             <div className="space-y-4 p-4 rounded-lg bg-warning/10 border border-warning/20">
               <div className="flex items-center justify-between">
                 <div>
                   <Label htmlFor="reimbursable" className="text-base">Da rimborsare</Label>
-                  <p className="text-sm text-muted-foreground">Imposta rate di rimborso</p>
+                  <p className="text-sm text-muted-foreground">Genera un debito ricorrente</p>
                 </div>
                 <Switch
                   id="reimbursable"
@@ -493,7 +498,7 @@ export function TransactionForm({ transaction, accounts, defaultType, defaultFlo
                   {calculatedMonths > 0 && (
                     <div className="p-3 rounded-lg bg-background/50 space-y-1">
                       <p className="text-sm font-medium">
-                        Durata calcolata: <span className="text-primary">{calculatedMonths} mesi</span>
+                        Durata debito: <span className="text-primary">{calculatedMonths} mesi</span>
                       </p>
                       {calculatedEndDate && (
                         <p className="text-xs text-muted-foreground">
@@ -501,7 +506,7 @@ export function TransactionForm({ transaction, accounts, defaultType, defaultFlo
                         </p>
                       )}
                       <p className="text-xs text-muted-foreground">
-                        Totale rate: {new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format((parseFloat(installmentAmount) || 0) * calculatedMonths)}
+                        Verrà creato un debito di {new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(parseFloat(installmentAmount) || 0)}/mese per {calculatedMonths} mesi
                       </p>
                     </div>
                   )}
